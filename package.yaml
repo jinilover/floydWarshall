@@ -1,0 +1,68 @@
+name:                rwst-parsec-floydWarshall
+version:             0.1.0.0
+github:              "github/rwst-parsec-floydWarshall"
+license:             BSD3
+author:              "Amy Wong"
+maintainer:          "columbawong@gmail.com"
+copyright:           "2018 Amy Wong"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/jinilover/rwst-parsec-floydWarshall#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- time
+- vector
+- containers
+- split
+- MissingH
+- utility-ht
+- protolude
+- parsec
+- writer-cps-mtl
+
+library:
+  source-dirs: src/lib
+  default-extensions:  OverloadedStrings
+                     , RecordWildCards
+                     , NoImplicitPrelude
+
+executables:
+  rwst-parsec-floydWarshall-exe:
+    main:                Main.hs
+    source-dirs:         src/app
+    default-extensions:  OverloadedStrings
+                       , RecordWildCards
+                       , NoImplicitPrelude
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - rwst-parsec-floydWarshall
+
+tests:
+  rwst-parsec-floydWarshall-test:
+    main:                Spec.hs
+    source-dirs:         test
+    default-extensions:  OverloadedStrings
+                       , RecordWildCards
+                       , NoImplicitPrelude
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - hspec
+    - rwst-parsec-floydWarshall
+    - HUnit
