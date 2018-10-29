@@ -1,6 +1,6 @@
-name:                rwst-parsec-floydWarshall
+name:                fsm-rwst-parsec-floydWarshall
 version:             0.1.0.0
-github:              "github/rwst-parsec-floydWarshall"
+github:              "jinilover/fsm-rwst-parsec-floydWarshall"
 license:             BSD3
 author:              "Amy Wong"
 maintainer:          "columbawong@gmail.com"
@@ -17,7 +17,7 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/jinilover/rwst-parsec-floydWarshall#readme>
+description:         Please see the README on GitHub at <https://github.com/jinilover/fsm-rwst-parsec-floydWarshall#readme>
 
 dependencies:
 - base >= 4.7 && < 5
@@ -38,7 +38,7 @@ library:
                      , NoImplicitPrelude
 
 executables:
-  rwst-parsec-floydWarshall-exe:
+  fsm-rwst-parsec-floydWarshall-exe:
     main:                Main.hs
     source-dirs:         src/app
     default-extensions:  OverloadedStrings
@@ -49,10 +49,10 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - rwst-parsec-floydWarshall
+    - fsm-rwst-parsec-floydWarshall
 
 tests:
-  rwst-parsec-floydWarshall-test:
+  fsm-rwst-parsec-floydWarshall-test:
     main:                Spec.hs
     source-dirs:         test
     default-extensions:  OverloadedStrings
@@ -64,5 +64,5 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - hspec
-    - rwst-parsec-floydWarshall
+    - fsm-rwst-parsec-floydWarshall
     - HUnit
