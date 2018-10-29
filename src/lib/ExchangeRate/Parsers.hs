@@ -39,8 +39,8 @@ exchRatesParser = do
   [exch, src, dest] <- return $ map toUpper <$> [exchS, srcS, destS]
   when (src == dest) $ parserFail "The currencies must be different"
   return (time, Vertex exch src, Vertex exch dest, fwdR, bkdR)
-  where decimal :: ParsecT String () Identity Double
-        decimal = fmap read ((++) <$> integer <*> mantissa) >>= positive
+  where decimal :: Parser Double
+        decimal = read <$> ((++) <$> integer <*> mantissa) >>= positive
         mantissa = option "" $ (:) <$> char '.' <*> integer
         integer = many1 digit
         parseTime :: String -> Maybe UTCTime
