@@ -1,4 +1,8 @@
 module ExchangeRate.Parsers
+  ( exchRatesParser
+  , exchPairParser
+  , simpleParse
+  , parseErrorMsgs )
   where
 
 import Protolude hiding ((<|>), maybeToEither, many)
@@ -19,11 +23,9 @@ import qualified Data.Set as S
 import ExchangeRate.DataTypes
 import ExchangeRate.Utils
 
--- | Parse the tokens for updating exchange rates.  It parses the given tokens,
---  `[String]`, to timestamp, exchange, source currency, destination currency,
--- forward rate and backward rate respectively.  The tokens are valid, it will
--- update the existing `UserInput` data and return the new `UserInput`.
--- Otherwise, it will return a failure reason.
+-- | Parse the string for updating exchange rates.  It extracts timestamp,
+-- exchange, source currency, destination currency, forward rate and backward
+-- rate from the string by using parsec functions
 exchRatesParser :: Parser (UTCTime, Vertex, Vertex, Double, Double)
 exchRatesParser = do
   tS <- skipSpaces >> many1 (satisfy (/= ' '))
@@ -45,11 +47,10 @@ exchRatesParser = do
         parseTime = parseTimeM True defaultTimeLocale "%Y-%m-%dT%H:%M:%S%z"
         positive r = if r <= 0 then parserFail "Rate must be > 0" else return r
 
--- | Parse the tokens to a pair of vertices.  These vertices are later on used
--- for requesting best rate.  It parses the given tokens, `[String]`, to
--- source exchange, source currency, destination exchange and destination
--- currency respectively.  The vertice pair will be returned only after
--- successful validation.  Otherwise, it will return a failure reason.
+-- | Parse the string to a pair of vertices.  These vertices are later on used
+-- for requesting best rate.  It extracts source exchange, source currency,
+-- destination exchange and destination currency from the string by using parsec
+-- functions.
 exchPairParser :: Parser (Vertex, Vertex)
 exchPairParser = do
   srcExch' <- skipSpaces >> alphabets
@@ -61,17 +62,17 @@ exchPairParser = do
   when (src == dest) $ parserFail "source must be different from destination"
   return pair
 
-alphabets :: ParsecT String () Identity String
-alphabets = many1 letter
-
-skipSpaces :: ParsecT String () Identity ()
-skipSpaces = skipMany space
-
 simpleParse :: Parser a -> String -> Either ParseError a
 simpleParse = (`parse` "regularParse")
 
-parserErrorMsgs :: ParseError -> [String]
-parserErrorMsgs = map interpret . errorMessages
+alphabets :: Parser String
+alphabets = many1 letter
+
+skipSpaces :: Parser ()
+skipSpaces = skipMany space
+
+parseErrorMsgs :: ParseError -> [String]
+parseErrorMsgs = map interpret . errorMessages
   where interpret (SysUnExpect s) = "System unexpecting: " ++ s
         interpret (UnExpect s) = "Unexpecting: " ++ s
         interpret (Expect s) = "Expecting: " ++ s

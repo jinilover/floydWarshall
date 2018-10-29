@@ -21,6 +21,8 @@ import ExchangeRate.Algorithms
 import ExchangeRate.Parsers
 import ExchangeRate.Utils
 
+-- | Combine 'updateRates RWST' and 'findBestRate RWST'.  If the first 'RWST'
+-- execution fails, it will execute the second one.
 combineRWST :: RWST String [String] AppState IO Bool
 combineRWST = transform updateRates >>= (\a ->
     if a then return a
@@ -35,6 +37,10 @@ combineRWST = transform updateRates >>= (\a ->
           tell w
           return a
 
+-- | Find the best rate and the trades involved for the given exchange nodes
+-- (provided by the input string) from the 'AppState' containing
+-- the exchange rates between exchange nodes.  It uses floyd-warshall algo
+-- to calculate the best rate.
 findBestRate :: RWST String () AppState (Either [String]) [String]
 findBestRate = do
   s <- get
@@ -47,6 +53,8 @@ findBestRate = do
   where reoptimize (UserInput rates vertices) =
           floydWarshall 0 . buildMatrix rates . snd . setToMapVector $ vertices
 
+-- | Extract the exchange nodes, the corresponding rates and the timestamp from
+-- the input string and stores the rates to 'AppState' if the timestamp is newer.
 updateRates :: RWST String () AppState (Either [String]) [String]
 updateRates =
   do (time, src, dest, fwdR, bkdR) <- parseRates
@@ -68,6 +76,8 @@ updateRates =
                       "(" ++ srcExch ++ ", " ++ srcCcy ++ ") -- " ++ show rate ++ " " ++ show time ++ " --> (" ++ destExch ++ ", " ++ destCcy ++ ")"
                     ) . M.toAscList
 
+-- | make sure the given vertice pair from the 'RWST' exist in the given
+-- 'Set Vertex'
 validateExchPair :: S.Set Vertex ->
                     RWST String () AppState (Either [String]) (Vertex, Vertex) ->
                     RWST String () AppState (Either [String]) (Vertex, Vertex)
@@ -83,4 +93,4 @@ parseRates :: RWST String () AppState (Either [String]) (UTCTime, Vertex, Vertex
 parseRates = parseString exchRatesParser
 
 parseString :: Parser a -> RWST String () AppState (Either [String]) a
-parseString p = rwsT (\r s -> (, s, ()) <$> left parserErrorMsgs (simpleParse p r))
+parseString p = rwsT (\r s -> (, s, ()) <$> left parseErrorMsgs (simpleParse p r))

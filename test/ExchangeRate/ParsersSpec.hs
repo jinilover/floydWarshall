@@ -70,7 +70,7 @@ exchPairParserSpec =
   where parse = simpleParse exchPairParser
 
 expectParseError :: Either ParseError a -> String -> Expectation
-expectParseError (Left err) s = parserErrorMsgs err `shouldSatisfy` elem s
+expectParseError (Left err) s = parseErrorMsgs err `shouldSatisfy` elem s
 expectParseError _ s = assertFailure ("Expected failure msg: " ++ s)
 
 specs :: [Spec]

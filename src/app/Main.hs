@@ -17,10 +17,11 @@ import ExchangeRate.ProcessRequests
 main :: IO ()
 main = userPrompt $ OutSync emptyUserInput
 
--- | Prompt for user input and tokenizing the input strings into tokens.
--- The tokens are expected to be either exchange rates update or best rate
--- request.
-
+-- | Prompt for user input, and pass the string to 'updateRates' to process.
+-- If it process successfully, it will display the result.  Otherwise,
+-- it will pass the same string to 'findBestRate' to process and display the
+-- result.  If it still fails, it will inform the user of an invalid string.
+-- After processing, it will update its state and wait for next user input.
 userPrompt :: AppState -> IO ()
 userPrompt s =
   do r <- getLine
