@@ -27,25 +27,29 @@ buildMatrixSpec =
     it "build a matrix expected to be inputMatrix2 7*7" $ do
       time <- getCurrentTime
       buildMatrix (createRates2 time) v2 `shouldBe` inputMatrix2
-  where v1 = V.fromList [kraken_btc, kraken_usd, gdax_usd, gdax_btc]
-        createRates1 time = M.fromList
-          [ ((gdax_btc, gdax_usd), (1001, time))
-          , ((kraken_btc, kraken_usd), (1000, time))
-          , ((gdax_usd, gdax_btc), (0.0008, time))
-          , ((kraken_usd, kraken_btc), (0.0009, time))]
-        v2 = V.fromList [kraken_btc, kraken_usd, gdax_usd, gdax_btc, bittrex_btc, bittrex_usd, bittrex_stc]
-        createRates2 time = M.fromList
-          [ ((bittrex_usd, bittrex_btc), (0.001, time))
-          , ((kraken_usd, kraken_btc), (0.0009, time))
-          , ((gdax_usd, gdax_btc), (0.0008, time))
-          , ((bittrex_usd, bittrex_stc), (0.00085, time))
-          , ((bittrex_stc, bittrex_btc), (1.007, time))
-          , ((gdax_btc, gdax_usd), (1001, time))
-          , ((bittrex_btc, bittrex_usd), (998, time))
-          , ((bittrex_btc, bittrex_stc), (0.9, time))
-          , ((kraken_btc, kraken_usd), (1000, time))
-          , ((bittrex_stc, bittrex_usd), (1000, time))
-          ]
+  where
+    v1 = V.fromList [kraken_btc, kraken_usd, gdax_usd, gdax_btc]
+
+    createRates1 time = M.fromList
+      [ ((gdax_btc, gdax_usd), (1001, time))
+      , ((kraken_btc, kraken_usd), (1000, time))
+      , ((gdax_usd, gdax_btc), (0.0008, time))
+      , ((kraken_usd, kraken_btc), (0.0009, time))]
+
+    v2 = V.fromList [kraken_btc, kraken_usd, gdax_usd, gdax_btc, bittrex_btc, bittrex_usd, bittrex_stc]
+
+    createRates2 time = M.fromList
+      [ ((bittrex_usd, bittrex_btc), (0.001, time))
+      , ((kraken_usd, kraken_btc), (0.0009, time))
+      , ((gdax_usd, gdax_btc), (0.0008, time))
+      , ((bittrex_usd, bittrex_stc), (0.00085, time))
+      , ((bittrex_stc, bittrex_btc), (1.007, time))
+      , ((gdax_btc, gdax_usd), (1001, time))
+      , ((bittrex_btc, bittrex_usd), (998, time))
+      , ((bittrex_btc, bittrex_stc), (0.9, time))
+      , ((kraken_btc, kraken_usd), (1000, time))
+      , ((bittrex_stc, bittrex_usd), (1000, time))
+      ]
 
 floydWarshallSpec :: Spec
 floydWarshallSpec =
@@ -84,7 +88,8 @@ optimumPathSpec =
         , "KRAKEN, BTC"
         , "GDAX, BTC"
         , "BEST_RATES_END"]
-  where vertexSet = S.fromList [kraken_btc, kraken_usd, gdax_usd, gdax_btc]
+  where
+    vertexSet = S.fromList [kraken_btc, kraken_usd, gdax_usd, gdax_btc]
 
 specs :: [Spec]
 specs = [buildMatrixSpec, floydWarshallSpec, optimumPathSpec]

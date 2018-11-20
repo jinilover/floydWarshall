@@ -54,7 +54,8 @@ exchRatesParserSpec =
     it "convert exchange currency to upper case" $
       parse "2017-11-01T09:42:24+00:00 kraken usd btc 1000.0 0.0009" `shouldBe`
         Right (posixSecondsToUTCTime 1509529344, kraken_usd, kraken_btc, 1000.0, 0.0009)
-  where parse = simpleParse exchRatesParser
+  where
+    parse = simpleParse exchRatesParser
 
 exchPairParserSpec :: Spec
 exchPairParserSpec =
@@ -67,7 +68,8 @@ exchPairParserSpec =
       parse "    KRAKEN BTC   GDAX    USD  " `shouldBe` Right (kraken_btc, gdax_usd)
     it "parsed the source and destination in case insensitve manner" $
       parse "kraken btC Gdax Usd" `shouldBe` Right (kraken_btc, gdax_usd)
-  where parse = simpleParse exchPairParser
+  where
+    parse = simpleParse exchPairParser
 
 expectParseError :: Either ParseError a -> String -> Expectation
 expectParseError (Left err) s = parseErrorMsgs err `shouldSatisfy` elem s

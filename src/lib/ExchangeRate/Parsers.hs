@@ -39,13 +39,17 @@ exchRatesParser = do
   [exch, src, dest] <- return $ map toUpper <$> [exchS, srcS, destS]
   when (src == dest) $ parserFail "The currencies must be different"
   return (time, Vertex exch src, Vertex exch dest, fwdR, bkdR)
-  where decimal :: Parser Double
-        decimal = read <$> ((++) <$> integer <*> mantissa) >>= positive
-        mantissa = option "" $ (:) <$> char '.' <*> integer
-        integer = many1 digit
-        parseTime :: String -> Maybe UTCTime
-        parseTime = parseTimeM True defaultTimeLocale "%Y-%m-%dT%H:%M:%S%z"
-        positive r = if r <= 0 then parserFail "Rate must be > 0" else return r
+  where
+    decimal :: Parser Double
+    decimal = read <$> ((++) <$> integer <*> mantissa) >>= positive
+
+    mantissa = option "" $ (:) <$> char '.' <*> integer
+
+    integer = many1 digit
+
+    parseTime :: String -> Maybe UTCTime
+    parseTime = parseTimeM True defaultTimeLocale "%Y-%m-%dT%H:%M:%S%z"
+    positive r = if r <= 0 then parserFail "Rate must be > 0" else return r
 
 -- | Parse the string to a pair of vertices.  These vertices are later on used
 -- for requesting best rate.  It extracts source exchange, source currency,
@@ -73,7 +77,8 @@ skipSpaces = skipMany space
 
 parseErrorMsgs :: ParseError -> [String]
 parseErrorMsgs = map interpret . errorMessages
-  where interpret (SysUnExpect s) = "System unexpecting: " ++ s
-        interpret (UnExpect s) = "Unexpecting: " ++ s
-        interpret (Expect s) = "Expecting: " ++ s
-        interpret (Message s) = "General error: " ++ s
+  where
+    interpret (SysUnExpect s) = "System unexpecting: " ++ s
+    interpret (UnExpect s) = "Unexpecting: " ++ s
+    interpret (Expect s) = "Expecting: " ++ s
+    interpret (Message s) = "General error: " ++ s

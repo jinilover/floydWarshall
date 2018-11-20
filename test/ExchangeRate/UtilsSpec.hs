@@ -24,7 +24,8 @@ setToMapVectorSpec =
         m == M.fromList [(gdax_btc, 0), (gdax_usd, 1), (kraken_btc, 2), (kraken_usd, 3)] &&
         v == V.fromList [gdax_btc, gdax_usd, kraken_btc, kraken_usd]
       )
-  where s = S.fromList [kraken_btc, gdax_btc, kraken_usd, gdax_usd]
+  where
+    s = S.fromList [kraken_btc, gdax_btc, kraken_usd, gdax_usd]
 
 specs :: [Spec]
 specs = [setToMapVectorSpec]

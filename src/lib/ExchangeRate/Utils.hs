@@ -16,7 +16,8 @@ import ExchangeRate.DataTypes
 -- element.
 setToMapVector :: S.Set Vertex -> (M.Map Vertex Int, V.Vector Vertex)
 setToMapVector s = (M.fromList $ zip l [0..(length l)], V.fromList l)
-  where l = S.toAscList s
+  where
+    l = S.toAscList s
 
 updateMap :: Ord k => M.Map k v -> [(k, v)] -> M.Map k v
 updateMap = foldl (\m (k, v) -> M.insert k v m)
