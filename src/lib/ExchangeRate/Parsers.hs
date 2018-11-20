@@ -5,7 +5,7 @@ module ExchangeRate.Parsers
   , parseErrorMsgs )
   where
 
-import Protolude hiding ((<|>), maybeToEither, many)
+import Protolude
 import Prelude (String)
 import Text.Read
 import Text.Parsec
@@ -62,12 +62,12 @@ exchPairParser = do
   destExch' <- skipSpaces >> alphabets
   destCcy' <- skipSpaces >> alphabets
   [srcExch, srcCcy, destExch, destCcy] <- return $ map toUpper <$> [srcExch', srcCcy', destExch', destCcy']
-  pair@(src, dest) <- return (Vertex srcExch srcCcy, Vertex destExch destCcy)
+  let pair@(src, dest) = (Vertex srcExch srcCcy, Vertex destExch destCcy)
   when (src == dest) $ parserFail "source must be different from destination"
   return pair
 
 simpleParse :: Parser a -> String -> Either ParseError a
-simpleParse = (`parse` "regularParse")
+simpleParse = flip parse "regularParse"
 
 alphabets :: Parser String
 alphabets = many1 letter

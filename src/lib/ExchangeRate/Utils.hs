@@ -23,7 +23,7 @@ updateMap :: Ord k => M.Map k v -> [(k, v)] -> M.Map k v
 updateMap = foldl (\m (k, v) -> M.insert k v m)
 
 updateSet :: Ord v => S.Set v -> [v] -> S.Set v
-updateSet = foldl (\s -> (`S.insert` s))
+updateSet = foldl . flip $ S.insert
 
 showVertex :: Vertex -> String
-showVertex (Vertex exch ccy) = "(" ++ exch ++ ", " ++ ccy ++ ")"
+showVertex (Vertex exch ccy) = exch ++ ", " ++ ccy

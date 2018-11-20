@@ -30,7 +30,7 @@ buildMatrix exRates v = updateRow <$> seqNums
           | i == j = emptyEntry
           | otherwise = if ccy vtxI == ccy vtxJ
                         then MatrixEntry 1 [j]
-                        else maybe emptyEntry ((`MatrixEntry` [j]) . fst) $ M.lookup (vtxI, vtxJ) exRates
+                        else maybe emptyEntry (flip MatrixEntry [j] . fst) $ M.lookup (vtxI, vtxJ) exRates
           where
             [vtxI, vtxJ] = (v !) <$> [i, j]
 
@@ -64,20 +64,25 @@ floydWarshall k matrix
 -- | Find the best rate and the path to be taken for the given vertice pair.
 -- And convert the information into output message.
 optimumPath :: (Vertex, Vertex) -> S.Set Vertex -> Matrix -> [String]
-optimumPath (src, dest) set m = either (: []) identity result
+optimumPath (src, dest) set m = either (: []) identity $ do
+  [srcIdx, destIdx] <- maybeToEither
+                       "Both source and destination must have been entered before" $
+                       traverse (`M.lookup` vertexIndexMap) [src, dest]
+  let entry@MatrixEntry{..} = m ! srcIdx ! destIdx
+  maybeToEither "Not reachable" $ prettyShow bestRate <$> srcToDest entry
   where
-    interpret r xs =
-      ("BEST_RATES_BEGIN " ++ exch src ++ " " ++ ccy src ++ " " ++ exch dest ++ " " ++ ccy dest ++ " " ++ show r) :
-        ((\x -> exch x ++ ", " ++ ccy x) <$> xs) ++ ["BEST_RATES_END"]
+    srcToDest MatrixEntry{..} =
+      let pathVertices = (vertices !) <$> path in
+      viewR pathVertices >>= (\(_, end) -> if end == dest then Just (src:pathVertices) else Nothing)
 
-    result =
-      do
-        [srcIdx, destIdx] <- maybeToEither
-                              "Both source and destination must have been entered before" $
-                              traverse (`M.lookup` vertexToInt) [src, dest]
-        let matrixEntry = m ! srcIdx ! destIdx
-        maybe (Left "Not reachable") (Right . interpret (bestRate matrixEntry)) (srcToDest matrixEntry)
-        where
-          srcToDest entry = viewR ((vertices !) <$> path entry) >>=
-                            (\(xs, x) -> if x == dest then Just (src : xs ++ [x]) else Nothing)
-          (vertexToInt, vertices) = setToMapVector set
+    (vertexIndexMap, vertices) = setToMapVector set
+
+    prettyShow rate xs =
+      ("BEST_RATES_BEGIN " ++
+        exch src ++ " " ++
+        ccy src ++ " " ++
+        exch dest ++ " " ++
+        ccy dest ++ " " ++
+        show rate) :
+        (showVertex <$> xs) ++
+        ["BEST_RATES_END"]
