@@ -5,7 +5,7 @@ import Protolude
 import Prelude (String)
 import Data.String.Utils
 import Data.List.Split
-import Data.Vector as V hiding (length, zip, foldl)
+import Data.Vector as V hiding (length, zip, foldl, (++))
 import qualified Data.Map as M
 import qualified Data.Set as S
 
@@ -15,7 +15,7 @@ import ExchangeRate.DataTypes
 -- its index in the `Vector`.  `Vector` is better performed in indexing an
 -- element.
 setToMapVector :: S.Set Vertex -> (M.Map Vertex Int, V.Vector Vertex)
-setToMapVector s = (M.fromList $ zip l [0..(length l)], V.fromList l)
+setToMapVector s = (M.fromList $ zip l [0 .. length l], V.fromList l)
   where
     l = S.toAscList s
 
@@ -24,3 +24,6 @@ updateMap = foldl (\m (k, v) -> M.insert k v m)
 
 updateSet :: Ord v => S.Set v -> [v] -> S.Set v
 updateSet = foldl (\s -> (`S.insert` s))
+
+showVertex :: Vertex -> String
+showVertex (Vertex exch ccy) = "(" ++ exch ++ ", " ++ ccy ++ ")"

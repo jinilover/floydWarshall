@@ -24,19 +24,21 @@ import ExchangeRate.Utils
 -- | Combine 'updateRates RWST' and 'findBestRate RWST'.  If the first 'RWST'
 -- execution fails, it will execute the second one.
 combineRWST :: RWST String [String] AppState IO Bool
-combineRWST = transform updateRates >>= (\a ->
+combineRWST = transformRWST updateRates >>= (\a ->
     if a then return a
-      else tell ["Invalid request to update rates, probably a request for best rate"] >> transform findBestRate
+      else tell ["Invalid request to update rates, probably a request for best rate"] >> transformRWST findBestRate
   )
   where
-    transform origRWST = do
+    transformRWST rwst = do
       r <- ask
       s <- get
-      let (a, newS, w) = case runRWST origRWST r s of Left errs -> (False, s, errs)
-                                                      Right (msgs, newS, _) -> (True, newS, msgs)
+      let (a, newS, w) = update rwst r s
       put newS
       tell w
       return a
+      where
+        update rwst r s = case runRWST rwst r s of Left errs -> (False, s, errs)
+                                                   Right (msgs, newS, _) -> (True, newS, msgs)
 
 -- | Find the best rate and the trades involved for the given exchange nodes
 -- (provided by the input string) from the 'AppState' containing
@@ -45,18 +47,15 @@ combineRWST = transform updateRates >>= (\a ->
 findBestRate :: RWST String () AppState (Either [String]) [String]
 findBestRate = do
   s <- get
-  let (newS, vertices, m) = newState s
+  let (newS, vertices, m) = syncMatrix s
   pair <- validateExchPair vertices parseExchPair
   put newS
   return $ optimumPath pair vertices m
   where
-    reoptimize (UserInput rates vertices) =
-      floydWarshall 0 . buildMatrix rates . snd . setToMapVector $ vertices
+    reoptimize (UserInput rates vertices) = floydWarshall 0 . buildMatrix rates . snd . setToMapVector $ vertices
 
-    newState origS@(InSync ui@(UserInput _ vertices) m) = (origS, vertices, m)
-    newState (OutSync ui@(UserInput _ vertices)) = (InSync ui newM, vertices, newM)
-      where
-        newM = reoptimize ui
+    syncMatrix origS@(InSync UserInput{..} m) = (origS, vertices, m)
+    syncMatrix (OutSync ui@UserInput{..}) = let newM = reoptimize ui in (InSync ui newM, vertices, newM)
 
 -- | Extract the exchange nodes, the corresponding rates and the timestamp from
 -- the input string and stores the rates to 'AppState' if the timestamp is newer.
@@ -64,25 +63,25 @@ updateRates :: RWST String () AppState (Either [String]) [String]
 updateRates =
   do (time, src, dest, fwdR, bkdR) <- parseRates
      s <- get
-     let (newS, newRates) = updateByTime time src dest fwdR bkdR s $ getUi s
+     let newS = updateState time src dest fwdR bkdR s
      put newS
-     return $ showRates newRates
+     return . showRates . exchRates . userInput $ newS
   where
-    getUi (InSync ui _) = ui
-    getUi (OutSync ui) = ui
+    userInput (InSync ui _) = ui
+    userInput (OutSync ui) = ui
 
-    showRates = map (\((Vertex srcExch srcCcy, Vertex destExch destCcy), (rate, time)) ->
-                      "(" ++ srcExch ++ ", " ++ srcCcy ++ ") -- " ++ show rate ++ " " ++ show time ++ " --> (" ++ destExch ++ ", " ++ destCcy ++ ")"
-                    ) . M.toAscList
+    showRates = map showRate . M.toAscList
 
-    updateByTime time src dest fwdR bkdR s ui@UserInput{..} =
-      maybe (OutSync $ UserInput newRates (updateSet vertices [src, dest]), newRates)
-      (\(_, origTime) ->
-        if origTime < time then (OutSync ui { exchRates = newRates }, newRates) else (s, exchRates)
-      ) $
-      M.lookup (src, dest) exchRates
+    showRate ((src, dest), (rate, time)) =
+      showVertex src ++ " -- " ++ show rate ++ " " ++ show time ++ " --> " ++ showVertex dest
+
+    updateState time src dest fwdR bkdR s =
+      maybe insert update . M.lookup (src, dest) . exchRates $ ui
         where
-          newRates = updateMap exchRates [((dest, src), (bkdR, time)), ((src, dest), (fwdR, time))]
+          ui = userInput s
+          insert = OutSync . UserInput newRates . (`updateSet` [src, dest]) . vertices $ ui
+          update (_, origTime) = if origTime < time then OutSync ui { exchRates = newRates} else s
+          newRates = updateMap (exchRates ui) [((dest, src), (bkdR, time)), ((src, dest), (fwdR, time))]
 
 -- | make sure the given vertice pair from the 'RWST' exist in the given
 -- 'Set Vertex'

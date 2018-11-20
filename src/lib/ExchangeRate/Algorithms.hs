@@ -22,7 +22,7 @@ import ExchangeRate.Utils
 buildMatrix :: ExchRates -> V.Vector Vertex -> Matrix
 buildMatrix exRates v = updateRow <$> seqNums
   where
-    seqNums = V.fromList [0..V.length v - 1]
+    seqNums = V.fromList [0 .. V.length v - 1]
 
     updateRow i = updateCol <$> seqNums
       where
@@ -30,10 +30,9 @@ buildMatrix exRates v = updateRow <$> seqNums
           | i == j = emptyEntry
           | otherwise = if ccy vtxI == ccy vtxJ
                         then MatrixEntry 1 [j]
-                        else maybe emptyEntry ((`MatrixEntry` [j]) . fst) $
-                              M.lookup (vtxI, vtxJ) exRates
-              where
-                [vtxI, vtxJ] = (v !) <$> [i, j]
+                        else maybe emptyEntry ((`MatrixEntry` [j]) . fst) $ M.lookup (vtxI, vtxJ) exRates
+          where
+            [vtxI, vtxJ] = (v !) <$> [i, j]
 
 -- | The floydWarshall algorithm
 floydWarshall :: Int -> Matrix -> Matrix
@@ -43,7 +42,7 @@ floydWarshall k matrix
   where
     matrixSize = V.length matrix
 
-    seqNums = V.fromList [0..matrixSize - 1]
+    seqNums = V.fromList [0 .. matrixSize - 1]
 
     updateRow i
       | i == k = matrix ! k
@@ -71,15 +70,14 @@ optimumPath (src, dest) set m = either (: []) identity result
       ("BEST_RATES_BEGIN " ++ exch src ++ " " ++ ccy src ++ " " ++ exch dest ++ " " ++ ccy dest ++ " " ++ show r) :
         ((\x -> exch x ++ ", " ++ ccy x) <$> xs) ++ ["BEST_RATES_END"]
 
-    (vertexToInt, vertices) = setToMapVector set
-
     result =
       do
         [srcIdx, destIdx] <- maybeToEither
                               "Both source and destination must have been entered before" $
                               traverse (`M.lookup` vertexToInt) [src, dest]
-        matrixEntry <- return $ m ! srcIdx ! destIdx
+        let matrixEntry = m ! srcIdx ! destIdx
         maybe (Left "Not reachable") (Right . interpret (bestRate matrixEntry)) (srcToDest matrixEntry)
         where
           srcToDest entry = viewR ((vertices !) <$> path entry) >>=
-            (\(xs, x) -> if x == dest then Just (src : xs ++ [x]) else Nothing)
+                            (\(xs, x) -> if x == dest then Just (src : xs ++ [x]) else Nothing)
+          (vertexToInt, vertices) = setToMapVector set
