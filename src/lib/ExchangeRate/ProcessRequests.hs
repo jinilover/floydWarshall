@@ -45,9 +45,7 @@ combineRWST = transform updateRates >>= (\a ->
 findBestRate :: RWST String () AppState (Either [String]) [String]
 findBestRate = do
   s <- get
-  let (newS, vertices, m) =
-        case s of (InSync ui@(UserInput _ vertices) m) -> (s, vertices, m)
-                  (OutSync ui@(UserInput _ vertices)) -> let newM = reoptimize ui in (InSync ui newM, vertices, newM)
+  let (newS, vertices, m) = newState s
   pair <- validateExchPair vertices parseExchPair
   put newS
   return $ optimumPath pair vertices m
@@ -55,18 +53,24 @@ findBestRate = do
     reoptimize (UserInput rates vertices) =
       floydWarshall 0 . buildMatrix rates . snd . setToMapVector $ vertices
 
+    newState origS@(InSync ui@(UserInput _ vertices) m) = (origS, vertices, m)
+    newState (OutSync ui@(UserInput _ vertices)) = (InSync ui newM, vertices, newM)
+      where
+        newM = reoptimize ui
+
 -- | Extract the exchange nodes, the corresponding rates and the timestamp from
 -- the input string and stores the rates to 'AppState' if the timestamp is newer.
 updateRates :: RWST String () AppState (Either [String]) [String]
 updateRates =
   do (time, src, dest, fwdR, bkdR) <- parseRates
      s <- get
-     let ui = case s of (InSync ui _) -> ui
-                        (OutSync ui) -> ui
-         (newS, newRates) = updateByTime time src dest fwdR bkdR s ui
+     let (newS, newRates) = updateByTime time src dest fwdR bkdR s $ getUi s
      put newS
      return $ showRates newRates
   where
+    getUi (InSync ui _) = ui
+    getUi (OutSync ui) = ui
+
     showRates = map (\((Vertex srcExch srcCcy, Vertex destExch destCcy), (rate, time)) ->
                       "(" ++ srcExch ++ ", " ++ srcCcy ++ ") -- " ++ show rate ++ " " ++ show time ++ " --> (" ++ destExch ++ ", " ++ destCcy ++ ")"
                     ) . M.toAscList
