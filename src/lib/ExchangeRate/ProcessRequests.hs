@@ -1,4 +1,5 @@
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE FlexibleContexts #-}
 module ExchangeRate.ProcessRequests
   ( combineRWST
   , findBestRate
@@ -24,38 +25,42 @@ import ExchangeRate.Utils
 -- | Combine 'updateRates RWST' and 'findBestRate RWST'.  If the first 'RWST'
 -- execution fails, it will execute the second one.
 combineRWST :: RWST String [String] AppState IO Bool
-combineRWST = transformRWST updateRates >>= (\a ->
-    if a then return a
-      else tell ["Invalid request to update rates, probably a request for best rate"] >> transformRWST findBestRate
-  )
+combineRWST = executeRWST updateRates >>= nextRwst
   where
-    transformRWST rwst = do
+    executeRWST rwst = do
       r <- ask
       s <- get
-      let (a, newS, w) = case runRWST rwst r s of Left errs -> (False, s, errs)
-                                                  Right (msgs, newS, _) -> (True, newS, msgs)
+      let (a, newS, w) = updateFromRwst rwst r s
       put newS
       tell w
       return a
+
+    updateFromRwst rwst r s =
+      case runRWST rwst r s of Left errs -> (False, s, errs)
+                               Right (msgs, newS, _) -> (True, newS, msgs)
+
+    nextRwst False = tell ["Invalid request to update rates, probably a request for best rate"]
+                     >> executeRWST findBestRate
+    nextRwst _ = return True
 
 -- | Find the best rate and the trades involved for the given exchange nodes
 -- (provided by the input string) from the 'AppState' containing
 -- the exchange rates between exchange nodes.  It uses floyd-warshall algo
 -- to calculate the best rate.
 findBestRate :: Rwst [String]
-findBestRate = do
-  s <- get
-  let (newS, vertices, m) = syncMatrix s
-  pair <- validateExchPair vertices parseExchPair
-  put newS
-  return $ optimumPath pair vertices m
-  where
-    syncMatrix origS@(InSync UserInput{..} m) = (origS, vertices, m)
-    syncMatrix (OutSync ui@UserInput{..}) = let newM = reoptimize ui in
-                                            (InSync ui newM, vertices, newM)
+findBestRate =
+  do s <- get
+     let (newS, vertices, m) = syncMatrix s
+     pair <- validateExchPair vertices parseExchPair
+     put newS
+     return $ optimumPath pair vertices m
+   where
+     syncMatrix origS@(InSync UserInput{..} m) = (origS, vertices, m)
+     syncMatrix (OutSync ui@UserInput{..}) = let newM = reoptimize ui in
+                                             (InSync ui newM, vertices, newM)
 
-    reoptimize (UserInput rates vertices) =
-      floydWarshall 0 . buildMatrix rates . snd . setToMapVector $ vertices
+     reoptimize (UserInput rates vertices) =
+       floydWarshall 0 . buildMatrix rates . snd . setToMapVector $ vertices
 
 -- | Extract the exchange nodes, the corresponding rates and the timestamp from
 -- the input string and stores the rates to 'AppState' if the timestamp is newer.
@@ -79,8 +84,11 @@ updateRates =
       maybe insert updateByTime . M.lookup (src, dest) . exchRates $ ui
       where
         ui = extractUi s
+
         insert = OutSync . UserInput newRates . flip updateSet [src, dest] . vertices $ ui
+
         updateByTime (_, origTime) = if origTime < time then OutSync ui { exchRates = newRates} else s
+
         newRates = updateMap (exchRates ui)
                    [ ((dest, src), (bkdR, time))
                    , ((src, dest), (fwdR, time)) ]
