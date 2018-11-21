@@ -42,7 +42,7 @@ combineRWST = transformRWST updateRates >>= (\a ->
 -- (provided by the input string) from the 'AppState' containing
 -- the exchange rates between exchange nodes.  It uses floyd-warshall algo
 -- to calculate the best rate.
-findBestRate :: RWST String () AppState (Either [String]) [String]
+findBestRate :: Rwst [String]
 findBestRate = do
   s <- get
   let (newS, vertices, m) = syncMatrix s
@@ -50,25 +50,25 @@ findBestRate = do
   put newS
   return $ optimumPath pair vertices m
   where
-    reoptimize (UserInput rates vertices) =
-      floydWarshall 0 . buildMatrix rates . snd . setToMapVector $ vertices
-
     syncMatrix origS@(InSync UserInput{..} m) = (origS, vertices, m)
     syncMatrix (OutSync ui@UserInput{..}) = let newM = reoptimize ui in
                                             (InSync ui newM, vertices, newM)
 
+    reoptimize (UserInput rates vertices) =
+      floydWarshall 0 . buildMatrix rates . snd . setToMapVector $ vertices
+
 -- | Extract the exchange nodes, the corresponding rates and the timestamp from
 -- the input string and stores the rates to 'AppState' if the timestamp is newer.
-updateRates :: RWST String () AppState (Either [String]) [String]
+updateRates :: Rwst [String]
 updateRates =
   do (time, src, dest, fwdR, bkdR) <- parseRates
      s <- get
      let newS = updateState time src dest fwdR bkdR s
      put newS
-     return . showRates . exchRates . userInput $ newS
+     return . showRates . exchRates . extractUi $ newS
   where
-    userInput (InSync ui _) = ui
-    userInput (OutSync ui) = ui
+    extractUi (InSync ui _) = ui
+    extractUi (OutSync ui) = ui
 
     showRates = map showRate . M.toAscList
 
@@ -76,29 +76,31 @@ updateRates =
       "(" ++ showVertex src ++ ") -- " ++ show rate ++ " " ++ show time ++ " --> (" ++ showVertex dest ++ ")"
 
     updateState time src dest fwdR bkdR s =
-      maybe insert update . M.lookup (src, dest) . exchRates $ ui
+      maybe insert updateByTime . M.lookup (src, dest) . exchRates $ ui
       where
-        ui = userInput s
-        insert = OutSync . UserInput newRates . (`updateSet` [src, dest]) . vertices $ ui
-        update (_, origTime) = if origTime < time then OutSync ui { exchRates = newRates} else s
-        newRates = updateMap (exchRates ui) [((dest, src), (bkdR, time)), ((src, dest), (fwdR, time))]
+        ui = extractUi s
+        insert = OutSync . UserInput newRates . flip updateSet [src, dest] . vertices $ ui
+        updateByTime (_, origTime) = if origTime < time then OutSync ui { exchRates = newRates} else s
+        newRates = updateMap (exchRates ui)
+                   [ ((dest, src), (bkdR, time))
+                   , ((src, dest), (fwdR, time)) ]
 
 -- | make sure the given vertice pair from the 'RWST' exist in the given
 -- 'Set Vertex'
 validateExchPair :: S.Set Vertex ->
-                    RWST String () AppState (Either [String]) (Vertex, Vertex) ->
-                    RWST String () AppState (Either [String]) (Vertex, Vertex)
+                    Rwst (Vertex, Vertex) ->
+                    Rwst (Vertex, Vertex)
 validateExchPair vertices =
-  mapRWST (>>= (\tuple@(pair, _, _) -> exist (fst pair) >> exist (snd pair) >> return tuple))
+  mapRWST ( >>= (\tuple@((src, dest), _, _) -> exist src >> exist dest >> return tuple) )
   where
     exist v = if S.member v vertices then Right ()
               else Left ["(" ++ showVertex v ++ ")" ++ " is not entered before"]
 
-parseExchPair :: RWST String () AppState (Either [String]) (Vertex, Vertex)
-parseExchPair = parseString exchPairParser
+parseExchPair :: Rwst (Vertex, Vertex)
+parseExchPair = genericParse exchPairParser
 
-parseRates :: RWST String () AppState (Either [String]) (UTCTime, Vertex, Vertex, Double, Double)
-parseRates = parseString exchRatesParser
+parseRates :: Rwst (UTCTime, Vertex, Vertex, Double, Double)
+parseRates = genericParse exchRatesParser
 
-parseString :: Parser a -> RWST String () AppState (Either [String]) a
-parseString p = rwsT (\r s -> fmap (, s, ()) . left parseErrorMsgs $ simpleParse p r)
+genericParse :: Parser a -> Rwst a
+genericParse p = rwsT (\r s -> fmap (, s, ()) . left parseErrorMsgs $ simpleParse p r)

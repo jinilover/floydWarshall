@@ -28,9 +28,8 @@ buildMatrix exRates v = updateRow <$> seqNums
       where
         updateCol j
           | i == j = emptyEntry
-          | otherwise = if ccy vtxI == ccy vtxJ
-                        then MatrixEntry 1 [j]
-                        else maybe emptyEntry (flip MatrixEntry [j] . fst) $ M.lookup (vtxI, vtxJ) exRates
+          | ccy vtxI == ccy vtxJ = MatrixEntry 1 [j]
+          | otherwise = maybe emptyEntry (flip MatrixEntry [j] . fst) $ M.lookup (vtxI, vtxJ) exRates
           where
             [vtxI, vtxJ] = (v !) <$> [i, j]
 
@@ -50,9 +49,8 @@ floydWarshall k matrix
       where
         updateCol j
           | i == j || k == j = matrix ! i ! j
-          | otherwise = if origRate < newRate
-                        then MatrixEntry newRate (ikPath ++ kjPath)
-                        else origEntry
+          | origRate < newRate = MatrixEntry newRate (ikPath ++ kjPath)
+          | otherwise = origEntry
           where
             origEntry@(MatrixEntry origRate _) = matrix ! i ! j
 

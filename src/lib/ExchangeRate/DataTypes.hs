@@ -5,6 +5,7 @@ import Protolude
 import Prelude (String)
 
 import Data.Time
+import Control.Monad.RWS.CPS
 import qualified Data.Map as M
 import qualified Data.Vector as V
 import qualified Data.Set as S
@@ -40,3 +41,5 @@ data AppState = InSync UserInput Matrix
 type Matrix = V.Vector (V.Vector MatrixEntry)
 
 type ExchRates = M.Map (Vertex, Vertex) (Double, UTCTime)
+
+type Rwst a = RWST String () AppState (Either [String]) a
