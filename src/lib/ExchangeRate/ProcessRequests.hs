@@ -1,5 +1,6 @@
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TupleSections
+           , FlexibleContexts #-}
+
 module ExchangeRate.ProcessRequests
   ( combineRWST
   , findBestRate
@@ -30,14 +31,11 @@ combineRWST = executeRWST updateRates >>= nextRwst
     executeRWST rwst = do
       r <- ask
       s <- get
-      let (a, newS, w) = updateFromRwst rwst r s
+      let (a, newS, w) = case runRWST rwst r s of Left errs -> (False, s, errs)
+                                                  Right (msgs, newS, _) -> (True, newS, msgs)
       put newS
       tell w
       return a
-
-    updateFromRwst rwst r s =
-      case runRWST rwst r s of Left errs -> (False, s, errs)
-                               Right (msgs, newS, _) -> (True, newS, msgs)
 
     nextRwst False = tell ["Invalid request to update rates, probably a request for best rate"]
                      >> executeRWST findBestRate
@@ -50,17 +48,14 @@ combineRWST = executeRWST updateRates >>= nextRwst
 findBestRate :: Rwst [String]
 findBestRate =
   do s <- get
-     let (newS, vertices, m) = syncMatrix s
+     let newS@(InSync UserInput{..} m) = syncMatrix s
      pair <- validateExchPair vertices parseExchPair
      put newS
      return $ optimumPath pair vertices m
    where
-     syncMatrix origS@(InSync UserInput{..} m) = (origS, vertices, m)
-     syncMatrix (OutSync ui@UserInput{..}) = let newM = reoptimize ui in
-                                             (InSync ui newM, vertices, newM)
-
-     reoptimize (UserInput rates vertices) =
-       floydWarshall 0 . buildMatrix rates . snd . setToMapVector $ vertices
+     syncMatrix (OutSync ui@UserInput{..}) =
+       InSync ui $ floydWarshall 0 . buildMatrix exchRates . snd . setToMapVector $ vertices
+     syncMatrix inSyncS = inSyncS
 
 -- | Extract the exchange nodes, the corresponding rates and the timestamp from
 -- the input string and stores the rates to 'AppState' if the timestamp is newer.
@@ -84,11 +79,8 @@ updateRates =
       maybe insert updateByTime . M.lookup (src, dest) . exchRates $ ui
       where
         ui = extractUi s
-
         insert = OutSync . UserInput newRates . flip updateSet [src, dest] . vertices $ ui
-
         updateByTime (_, origTime) = if origTime < time then OutSync ui { exchRates = newRates} else s
-
         newRates = updateMap (exchRates ui)
                    [ ((dest, src), (bkdR, time))
                    , ((src, dest), (fwdR, time)) ]

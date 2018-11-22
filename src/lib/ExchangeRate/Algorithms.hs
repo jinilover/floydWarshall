@@ -23,7 +23,6 @@ buildMatrix :: ExchRates -> V.Vector Vertex -> Matrix
 buildMatrix exRates v = updateRow <$> seqNums
   where
     seqNums = V.fromList [0 .. V.length v - 1]
-
     updateRow i = updateCol <$> seqNums
       where
         updateCol j
@@ -40,9 +39,7 @@ floydWarshall k matrix
   | otherwise = matrix
   where
     matrixSize = V.length matrix
-
     seqNums = V.fromList [0 .. matrixSize - 1]
-
     updateRow i
       | i == k = matrix ! k
       | otherwise = updateCol <$> seqNums

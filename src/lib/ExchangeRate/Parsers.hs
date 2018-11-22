@@ -40,14 +40,9 @@ exchRatesParser = do
   when (src == dest) $ parserFail "The currencies must be different"
   return (time, Vertex exch src, Vertex exch dest, fwdR, bkdR)
   where
-    decimal :: Parser Double
     decimal = read <$> ((++) <$> integer <*> mantissa) >>= positive
-
     mantissa = option "" $ (:) <$> char '.' <*> integer
-
     integer = many1 digit
-
-    parseTime :: String -> Maybe UTCTime
     parseTime = parseTimeM True defaultTimeLocale "%Y-%m-%dT%H:%M:%S%z"
     positive r = if r <= 0 then parserFail "Rate must be > 0" else return r
 
