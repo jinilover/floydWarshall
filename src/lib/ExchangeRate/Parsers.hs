@@ -5,7 +5,7 @@ module ExchangeRate.Parsers
   , parseErrorMsgs )
   where
 
-import Protolude
+import Protolude hiding (option)
 import Prelude (String)
 import Text.Read
 import Text.Parsec

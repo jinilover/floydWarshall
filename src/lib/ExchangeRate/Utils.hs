@@ -26,4 +26,4 @@ updateSet :: Ord v => S.Set v -> [v] -> S.Set v
 updateSet = foldl . flip $ S.insert
 
 showVertex :: Vertex -> String
-showVertex (Vertex exch ccy) = exch ++ ", " ++ ccy
+showVertex Vertex{..} = exch ++ ", " ++ ccy
