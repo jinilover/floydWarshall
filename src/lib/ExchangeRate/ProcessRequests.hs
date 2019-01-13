@@ -49,9 +49,8 @@ findBestRate :: Rwst [String]
 findBestRate =
   do s <- get
      let newS@(InSync UserInput{..} m) = syncMatrix s
-     pair <- validateExchPair vertices parseExchPair
      put newS
-     return $ optimumPath pair vertices m
+     (\p -> optimumPath p vertices m) <$> validateExchPair vertices parseExchPair
    where
      syncMatrix (OutSync ui@UserInput{..}) =
        InSync ui $ floydWarshall 0 . buildMatrix exchRates . snd . setToMapVector $ vertices
