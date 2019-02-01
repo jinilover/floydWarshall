@@ -28,14 +28,9 @@ import ExchangeRate.Utils
 combineRWST :: RWST String [String] AppState IO Bool
 combineRWST = executeRWST updateRates >>= nextRwst
   where
-    executeRWST rwst = do
-      r <- ask
-      s <- get
-      let (a, newS, w) = case runRWST rwst r s of Left errs -> (False, s, errs)
-                                                  Right (msgs, newS, _) -> (True, newS, msgs)
-      put newS
-      tell w
-      return a
+    executeRWST rwst = mapRWST (return . runIdentity) $
+      rws (\r s -> case runRWST rwst r s of Left errs -> (False, s, errs)
+                                            Right (msgs, newS, _) -> (True, newS, msgs))
 
     nextRwst False = tell ["Invalid request to update rates, probably a request for best rate"]
                      >> executeRWST findBestRate
@@ -61,10 +56,7 @@ findBestRate =
 updateRates :: Rwst [String]
 updateRates =
   do (time, src, dest, fwdR, bkdR) <- parseRates
-     s <- get
-     let newS = updateState time src dest fwdR bkdR s
-     put newS
-     return . showRates . exchRates . extractUi $ newS
+     state (\s -> let newS = updateState time src dest fwdR bkdR s in (showRates . exchRates . extractUi $ newS, newS))
   where
     extractUi (InSync ui _) = ui
     extractUi (OutSync ui) = ui
