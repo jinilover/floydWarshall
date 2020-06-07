@@ -1,10 +1,8 @@
 module ExchangeRate.DataTypes
   where
 
-import Protolude
-import Prelude (String)
-
 import Data.Time
+import Data.String (String)
 import Control.Monad.RWS.CPS
 import qualified Data.Map as M
 import qualified Data.Vector as V
@@ -13,7 +11,10 @@ import qualified Data.Set as S
 -- | `Vertex` composes of the exchange and currency
 data Vertex = Vertex {
                 exch :: String
-              , ccy :: String} deriving (Ord, Eq, Show)
+              , ccy :: String} deriving (Ord, Eq)
+
+instance Show Vertex where
+  show Vertex{..} = "(" ++ exch ++ ", " ++ ccy ++ ")"
 
 -- | Matrix entry composes of the best rate, and the path taken to
 -- achieve it.  It contains numbers that represent the vertices and

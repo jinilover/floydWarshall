@@ -6,7 +6,7 @@ import Test.Hspec
 import Test.HUnit.Lang
 
 import Protolude
-import Prelude (String)
+import Data.String (String)
 import Control.Arrow
 import Data.Time.Clock.POSIX
 import Text.Parsec.Error

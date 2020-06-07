@@ -6,10 +6,8 @@ module ExchangeRate.ProcessRequestsSpec
 import Test.Hspec
 import Test.HUnit.Lang
 
-import Protolude
-import Prelude (String)
+import Data.String (String)
 import Control.Monad.RWS.CPS
-import Data.Time
 import Data.List
 import qualified Data.Map as M
 import qualified Data.Set as S
@@ -19,7 +17,6 @@ import ExchangeRate.DataTypes
 import ExchangeRate.Utils
 import ExchangeRate.ProcessRequests
 import ExchangeRate.Constants
-import ExchangeRate.Algorithms
 import ExchangeRate.MockData
 import ExchangeRate.TestUtils
 
@@ -139,9 +136,9 @@ ui2 = ui1 { exchRates = updateMap (exchRates ui1) [gdax_btc_usd, gdax_usd_btc]
 emptyMatrix :: Matrix
 emptyMatrix = V.empty -- updateRates doesn't care the matrix value
 
-expectErrorMsg :: Either [String] a -> String -> Expectation
-expectErrorMsg (Left msgs) s = msgs `shouldSatisfy` elem s
-expectErrorMsg _ s = assertFailure ("Expected error msg: " ++ s)
+-- expectErrorMsg :: Either [String] a -> String -> Expectation
+-- expectErrorMsg (Left msgs) s = msgs `shouldSatisfy` elem s
+-- expectErrorMsg _ s = assertFailure ("Expected error msg: " ++ s)
 
 specs :: [Spec]
 specs = [combineRWSTSpec, findBestRateSpec, updateRatesSpec]

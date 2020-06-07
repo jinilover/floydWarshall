@@ -4,7 +4,6 @@ module ExchangeRate.AlgorithmsSpec
 
 import Test.Hspec
 
-import Protolude
 import Data.Time
 
 import qualified Data.Map as M
@@ -66,10 +65,10 @@ optimumPathSpec =
   describe "optimumPathSpec" $ do
     it "Source not exists in the graph" $
       optimumPath (kraken_stc, kraken_usd) vertexSet outputMatrix1 `shouldBe`
-        ["Both source and destination must have been entered before"]
+        ["(KRAKEN, STC) is not entered before"]
     it "Destination not exists in the graph" $
       optimumPath (kraken_btc, kraken_stc) vertexSet outputMatrix1 `shouldBe`
-        ["Both source and destination must have been entered before"]
+        ["(KRAKEN, STC) is not entered before"]
     it "Source cannot reach destination in the graph" $
       optimumPath (kraken_usd, gdax_btc) vertexSet outputMatrix1' `shouldBe`
         ["Not reachable"]

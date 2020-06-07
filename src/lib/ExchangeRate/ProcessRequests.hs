@@ -7,10 +7,9 @@ module ExchangeRate.ProcessRequests
   , updateRates )
   where
 
-import Protolude
-import Prelude (String)
+import Data.String (String)
 import Data.Time
-import Text.Parsec hiding (State)
+-- import Text.Parsec hiding (State)
 import Text.Parsec.String
 import Control.Arrow
 import Control.Monad.RWS.CPS

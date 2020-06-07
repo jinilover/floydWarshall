@@ -5,23 +5,23 @@ module ExchangeRate.Parsers
   , parseErrorMsgs )
   where
 
-import Protolude hiding (option)
-import Prelude (String)
+import Prelude hiding (option)
+import Data.String (String)
 import Text.Read
 import Text.Parsec
 import Text.Parsec.String
 import Text.Parsec.Error
-import Control.Monad
-import Control.Arrow
+-- import Control.Monad
+-- import Control.Arrow
 import Data.Char
-import Data.Time
-import Data.Either.Utils
+import Data.Time hiding (parseTime)
+-- import Data.Either.Utils
 
-import qualified Data.Map as M
-import qualified Data.Set as S
+-- import qualified Data.Map as M
+-- import qualified Data.Set as S
 
 import ExchangeRate.DataTypes
-import ExchangeRate.Utils
+-- import ExchangeRate.Utils
 
 -- | Parse the string for updating exchange rates.  It extracts timestamp,
 -- exchange, source currency, destination currency, forward rate and backward

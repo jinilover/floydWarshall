@@ -1,6 +1,5 @@
 import Test.Hspec
 
-import Protolude
 import qualified ExchangeRate.UtilsSpec as Utils
 import qualified ExchangeRate.ParsersSpec as Parsers
 import qualified ExchangeRate.AlgorithmsSpec as Algorithms

@@ -1,9 +1,9 @@
 module ExchangeRate.Algorithms
   where
 
-import Protolude hiding (maybeToEither)
-import Prelude (String)
-import Data.Either.Utils
+-- import Protolude hiding (maybeToEither)
+import Data.String (String)
+-- import Data.Either.Utils
 import Data.List.HT
 
 import Data.Vector as V hiding ((++))
@@ -30,7 +30,8 @@ buildMatrix exRates v = updateRow <$> seqNums
           | ccy vtxI == ccy vtxJ = MatrixEntry 1 [j]
           | otherwise = maybe emptyEntry (flip MatrixEntry [j] . fst) $ M.lookup (vtxI, vtxJ) exRates
           where
-            [vtxI, vtxJ] = (v !) <$> [i, j]
+            vtxI = v ! i
+            vtxJ = v ! j
 
 -- | The floydWarshall algorithm
 floydWarshall :: Int -> Matrix -> Matrix
@@ -60,9 +61,8 @@ floydWarshall k matrix
 -- And convert the information into output message.
 optimumPath :: (Vertex, Vertex) -> S.Set Vertex -> Matrix -> [String]
 optimumPath (src, dest) set m = either (: []) identity $ do
-  [srcIdx, destIdx] <- maybeToEither
-                       "Both source and destination must have been entered before" $
-                       traverse (`M.lookup` vertexIndexMap) [src, dest]
+  srcIdx <- maybeToEither (show src ++ " is not entered before") $ M.lookup src vertexIndexMap
+  destIdx <- maybeToEither (show dest ++ " is not entered before") $ M.lookup dest vertexIndexMap
   let entry@MatrixEntry{..} = m ! srcIdx ! destIdx
   maybeToEither "Not reachable" $ prettyShow bestRate <$> srcToDest entry
   where

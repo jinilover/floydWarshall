@@ -1,15 +1,16 @@
 module Main
   (main) where
 
-import Protolude hiding (putStrLn, getLine)
-import Prelude (String, putStrLn, getLine)
+-- import Protolude hiding (putStrLn, getLine)
+-- import Prelude (String, putStrLn, getLine)
 import Control.Monad.RWS.CPS
+import Data.String (String)
 
-import qualified Data.Map as M
+-- import qualified Data.Map as M
 
-import ExchangeRate.Utils
-import ExchangeRate.Parsers
-import ExchangeRate.Algorithms
+-- import ExchangeRate.Utils
+-- import ExchangeRate.Parsers
+-- import ExchangeRate.Algorithms
 import ExchangeRate.DataTypes
 import ExchangeRate.Constants
 import ExchangeRate.ProcessRequests
@@ -25,7 +26,10 @@ main = userPrompt $ OutSync emptyUserInput
 userPrompt :: AppState -> IO ()
 userPrompt s =
   do r <- getLine
-     (a, newS, w) <- runRWST combineRWST r s
-     traverse putStrLn w
-     when (not a) $ putStrLn "You neither enter exchange rates or request best rate, please enter a valid input"
+     (a, newS, w) <- runRWST combineRWST (toS r) s
+     traverse_ putStrLn w
+     when (not a) $ putStrLn errMsg
      userPrompt newS
+  where
+    errMsg :: String
+    errMsg = "You neither enter exchange rates or request best rate, please enter a valid input"

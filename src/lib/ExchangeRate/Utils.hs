@@ -1,10 +1,9 @@
 module ExchangeRate.Utils
   where
 
-import Protolude
-import Prelude (String)
-import Data.String.Utils
-import Data.List.Split
+import Data.String (String)
+-- import Data.String.Utils
+-- import Data.List.Split
 import Data.Vector as V hiding (length, zip, foldl, (++))
 import qualified Data.Map as M
 import qualified Data.Set as S
