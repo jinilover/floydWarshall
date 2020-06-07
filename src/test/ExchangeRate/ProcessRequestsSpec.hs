@@ -130,7 +130,7 @@ ui2 :: UserInput
 ui2 = ui1 { _exchRates = updateMap (_exchRates ui1) [gdax_btc_usd, gdax_usd_btc]
           , _vertices = updateSet (_vertices ui1) [gdax_btc, gdax_usd] }
 
-emptyMatrix :: Matrix MatrixEntry
+emptyMatrix :: Matrix RateEntry
 emptyMatrix = V.empty -- updateRates doesn't care the matrix value
 
 -- expectErrorMsg :: Either [String] a -> String -> Expectation

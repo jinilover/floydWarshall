@@ -18,54 +18,54 @@ import ExchangeRate.Utils
 -- Each entry is filled with the rate between the Vertex if there is any
 -- available from the given `ExchRates` map.  This matrix will be applied the
 -- floydWarshall algorithm
-buildMatrix :: ExchRates -> V.Vector Vertex -> Matrix MatrixEntry
-buildMatrix exRates v = updateRow <$> seqNums
+buildMatrix :: ExchRates -> V.Vector Vertex -> Matrix RateEntry
+buildMatrix exRates v = updateRow <$> indices
   where
-    seqNums = V.fromList [0 .. V.length v - 1]
-    updateRow i = updateCol <$> seqNums
+    indices = V.fromList [0 .. V.length v - 1]
+    updateRow i = updateCol <$> indices
       where
         updateCol j
           | i == j = emptyEntry
-          | ccyI == ccyJ = MatrixEntry 1 [j]
-          | otherwise = maybe emptyEntry (flip MatrixEntry [j] . fst) $ M.lookup (vtxI, vtxJ) exRates
+          | ccyI == ccyJ = RateEntry 1 [j]
+          | otherwise = maybe emptyEntry (flip RateEntry [j] . fst) $ M.lookup (vtxI, vtxJ) exRates
           where
             vtxI@(Vertex _ ccyI) = v ! i
             vtxJ@(Vertex _ ccyJ) = v ! j
 
 -- | The floydWarshall algorithm
-floydWarshall :: Int -> Matrix MatrixEntry -> Matrix MatrixEntry
+floydWarshall :: Int -> Matrix RateEntry -> Matrix RateEntry -- TODO remove Int
 floydWarshall k matrix
-  | k < matrixSize = floydWarshall (k + 1) $ updateRow <$> seqNums
+  | k < matrixSize = floydWarshall (k + 1) $ updateRow <$> indices
   | otherwise = matrix
   where
     matrixSize = V.length matrix
-    seqNums = V.fromList [0 .. matrixSize - 1]
+    indices = V.fromList [0 .. matrixSize - 1]
     updateRow i
       | i == k = matrix ! k
-      | otherwise = updateCol <$> seqNums
+      | otherwise = updateCol <$> indices
       where
         updateCol j
           | i == j || k == j = matrix ! i ! j
-          | origRate < newRate = MatrixEntry newRate (ikPath ++ kjPath)
+          | origRate < newRate = RateEntry newRate (ikPath ++ kjPath)
           | otherwise = origEntry
           where
-            origEntry@(MatrixEntry origRate _) = matrix ! i ! j
+            origEntry@(RateEntry origRate _) = matrix ! i ! j
 
-            MatrixEntry ikRate ikPath = matrix ! i ! k
-            MatrixEntry kjRate kjPath = matrix ! k ! j
+            RateEntry ikRate ikPath = matrix ! i ! k
+            RateEntry kjRate kjPath = matrix ! k ! j
 
             newRate = ikRate * kjRate
 
 -- | Find the best rate and the path to be taken for the given vertice pair.
 -- And convert the information into output message.
-optimumPath :: (Vertex, Vertex) -> S.Set Vertex -> Matrix MatrixEntry -> [String]
+optimumPath :: (Vertex, Vertex) -> S.Set Vertex -> Matrix RateEntry -> [String]
 optimumPath (src, dest) set m = either (: []) identity $ do
   srcIdx <- maybeToEither (show src ++ " is not entered before") $ M.lookup src vertexIndexMap
   destIdx <- maybeToEither (show dest ++ " is not entered before") $ M.lookup dest vertexIndexMap
-  let entry@MatrixEntry{..} = m ! srcIdx ! destIdx
+  let entry@RateEntry{..} = m ! srcIdx ! destIdx
   maybeToEither "Not reachable" $ prettyShow _bestRate <$> srcToDest entry
   where
-    srcToDest MatrixEntry{..} =
+    srcToDest RateEntry{..} =
       let pathVertices = (vertices !) <$> _path 
       in viewR pathVertices >>= (\(_, end) -> if end == dest then Just (src:pathVertices) else Nothing)
 

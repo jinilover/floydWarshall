@@ -17,13 +17,13 @@ data Vertex =
 instance Show Vertex where
   show Vertex{..} = "(" ++ _exch ++ ", " ++ _ccy ++ ")"
 
--- | Matrix entry composes of the best rate, and the path taken to
+-- | Rate entry composes of the best rate, and the path taken to
 -- achieve it.  It contains numbers that represent the vertices and
 -- used as the matrice indices.
 -- e.g. if path is [0, 3], the vertex i should be exchanged via vertex 0 and
 -- then vertex 3 to get the best rate with vertex 3
-data MatrixEntry = 
-  MatrixEntry {
+data RateEntry = 
+  RateEntry {
     _bestRate :: Double
   , _path :: [Int]
   } deriving (Show, Eq)
@@ -38,7 +38,7 @@ data UserInput =
 
 -- | AppState which represents whether the matrix of the best rates are in-sync
 -- with the UserInput.  This applies the idea of FSM.
-data AppState = InSync UserInput (Matrix MatrixEntry)
+data AppState = InSync UserInput (Matrix RateEntry)
               | OutSync UserInput
               deriving (Show, Eq)
 
@@ -54,5 +54,5 @@ emptyUserInput =
       _vertices = S.empty
   in  UserInput{..}
 
-emptyEntry :: MatrixEntry
-emptyEntry = MatrixEntry 0 []
+emptyEntry :: RateEntry
+emptyEntry = RateEntry 0 []
