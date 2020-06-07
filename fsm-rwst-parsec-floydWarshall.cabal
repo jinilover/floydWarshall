@@ -28,9 +28,8 @@ library
   import:               lang, deps
   hs-source-dirs:       src/lib
   exposed-modules:      Prelude
+                      , Types
                       , ExchangeRate.Algorithms
-                      , ExchangeRate.Constants
-                      , ExchangeRate.DataTypes
                       , ExchangeRate.Parsers
                       , ExchangeRate.ProcessRequests
                       , ExchangeRate.Utils

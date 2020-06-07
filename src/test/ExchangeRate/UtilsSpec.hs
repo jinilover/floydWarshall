@@ -3,12 +3,10 @@ module ExchangeRate.UtilsSpec
 
 import Test.Hspec
 
-import Protolude
 import qualified Data.Map as M
 import qualified Data.Set as S
 import qualified Data.Vector as V
 
-import ExchangeRate.DataTypes
 import ExchangeRate.Utils
 
 import ExchangeRate.MockData

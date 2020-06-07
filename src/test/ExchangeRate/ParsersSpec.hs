@@ -5,19 +5,11 @@ module ExchangeRate.ParsersSpec
 import Test.Hspec
 import Test.HUnit.Lang
 
-import Protolude
 import Data.String (String)
-import Control.Arrow
 import Data.Time.Clock.POSIX
 import Text.Parsec.Error
-import qualified Data.Map as M
-import qualified Data.Set as S
-import qualified Data.Vector as V
 
-import ExchangeRate.DataTypes
 import ExchangeRate.Parsers
-import ExchangeRate.Utils
-import ExchangeRate.Constants
 
 import ExchangeRate.MockData
 

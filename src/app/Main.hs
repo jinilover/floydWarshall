@@ -11,8 +11,7 @@ import Data.String (String)
 -- import ExchangeRate.Utils
 -- import ExchangeRate.Parsers
 -- import ExchangeRate.Algorithms
-import ExchangeRate.DataTypes
-import ExchangeRate.Constants
+import Types
 import ExchangeRate.ProcessRequests
 
 main :: IO ()

@@ -10,7 +10,7 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 import qualified Data.Vector as V
 
-import ExchangeRate.DataTypes
+import Types
 import ExchangeRate.Algorithms
 
 import ExchangeRate.MockData
@@ -58,7 +58,7 @@ floydWarshallSpec =
     it "floydWarshall on inputMatrix1 4*4" $
       floydWarshall 0 inputMatrix1 `shouldBe` outputMatrix1
     it "floydWarshall on inputMatrix2 7*7" $
-      (path <$>) <$> floydWarshall 0 inputMatrix2 `shouldBe` outputPathsMatrix2
+      (_path <$>) <$> floydWarshall 0 inputMatrix2 `shouldBe` outputPathsMatrix2
 
 optimumPathSpec :: Spec
 optimumPathSpec =
@@ -75,17 +75,17 @@ optimumPathSpec =
     it "Reachable from kraken_btc to gdax_usd" $
       optimumPath (kraken_btc, gdax_usd) vertexSet outputMatrix1' `shouldBe`
         [ "BEST_RATES_BEGIN KRAKEN BTC GDAX USD 1001.0"
-        , "KRAKEN, BTC"
-        , "GDAX, BTC"
-        , "GDAX, USD"
+        , "(KRAKEN, BTC)"
+        , "(GDAX, BTC)"
+        , "(GDAX, USD)"
         , "BEST_RATES_END"]
     it "Reachable from gdax_usd to gdax_btc" $
       optimumPath (gdax_usd, gdax_btc) vertexSet outputMatrix1' `shouldBe`
         [ "BEST_RATES_BEGIN GDAX USD GDAX BTC 9.0e-4"
-        , "GDAX, USD"
-        , "KRAKEN, USD"
-        , "KRAKEN, BTC"
-        , "GDAX, BTC"
+        , "(GDAX, USD)"
+        , "(KRAKEN, USD)"
+        , "(KRAKEN, BTC)"
+        , "(GDAX, BTC)"
         , "BEST_RATES_END"]
   where
     vertexSet = S.fromList [kraken_btc, kraken_usd, gdax_usd, gdax_btc]

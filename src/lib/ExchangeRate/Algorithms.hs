@@ -11,13 +11,12 @@ import Data.Vector as V hiding ((++))
 import qualified Data.Map as M
 import qualified Data.Set as S
 
-import ExchangeRate.DataTypes
-import ExchangeRate.Constants
+import Types
 import ExchangeRate.Utils
 
 -- | Build a matrix of n*n size where n is the size of the `Vertex` vector
 -- Each entry is filled with the rate between the Vertex if there is any
--- available from the given `ExchRates` map.  This matrix will be applied then
+-- available from the given `ExchRates` map.  This matrix will be applied the
 -- floydWarshall algorithm
 buildMatrix :: ExchRates -> V.Vector Vertex -> Matrix
 buildMatrix exRates v = updateRow <$> seqNums
@@ -27,11 +26,11 @@ buildMatrix exRates v = updateRow <$> seqNums
       where
         updateCol j
           | i == j = emptyEntry
-          | ccy vtxI == ccy vtxJ = MatrixEntry 1 [j]
+          | ccyI == ccyJ = MatrixEntry 1 [j]
           | otherwise = maybe emptyEntry (flip MatrixEntry [j] . fst) $ M.lookup (vtxI, vtxJ) exRates
           where
-            vtxI = v ! i
-            vtxJ = v ! j
+            vtxI@(Vertex _ ccyI) = v ! i
+            vtxJ@(Vertex _ ccyJ) = v ! j
 
 -- | The floydWarshall algorithm
 floydWarshall :: Int -> Matrix -> Matrix
@@ -64,20 +63,20 @@ optimumPath (src, dest) set m = either (: []) identity $ do
   srcIdx <- maybeToEither (show src ++ " is not entered before") $ M.lookup src vertexIndexMap
   destIdx <- maybeToEither (show dest ++ " is not entered before") $ M.lookup dest vertexIndexMap
   let entry@MatrixEntry{..} = m ! srcIdx ! destIdx
-  maybeToEither "Not reachable" $ prettyShow bestRate <$> srcToDest entry
+  maybeToEither "Not reachable" $ prettyShow _bestRate <$> srcToDest entry
   where
     srcToDest MatrixEntry{..} =
-      let pathVertices = (vertices !) <$> path in
-      viewR pathVertices >>= (\(_, end) -> if end == dest then Just (src:pathVertices) else Nothing)
+      let pathVertices = (vertices !) <$> _path 
+      in viewR pathVertices >>= (\(_, end) -> if end == dest then Just (src:pathVertices) else Nothing)
 
     (vertexIndexMap, vertices) = setToMapVector set
 
     prettyShow rate xs =
       ("BEST_RATES_BEGIN " ++
-        exch src ++ " " ++
-        ccy src ++ " " ++
-        exch dest ++ " " ++
-        ccy dest ++ " " ++
+        _exch src ++ " " ++
+        _ccy src ++ " " ++
+        _exch dest ++ " " ++
+        _ccy dest ++ " " ++
         show rate) :
-        (showVertex <$> xs) ++
+        (show <$> xs) ++
         ["BEST_RATES_END"]

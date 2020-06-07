@@ -20,7 +20,7 @@ import Data.Time hiding (parseTime)
 -- import qualified Data.Map as M
 -- import qualified Data.Set as S
 
-import ExchangeRate.DataTypes
+import Types
 -- import ExchangeRate.Utils
 
 -- | Parse the string for updating exchange rates.  It extracts timestamp,

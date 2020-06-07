@@ -17,7 +17,7 @@ import Control.Monad.RWS.CPS
 import qualified Data.Set as S
 import qualified Data.Map as M
 
-import ExchangeRate.DataTypes
+import Types
 import ExchangeRate.Algorithms
 import ExchangeRate.Parsers
 import ExchangeRate.Utils
@@ -44,10 +44,10 @@ findBestRate =
   do s <- get
      let newS@(InSync UserInput{..} m) = syncMatrix s
      put newS
-     (\p -> optimumPath p vertices m) <$> validateExchPair vertices parseExchPair
+     (\p -> optimumPath p _vertices m) <$> validateExchPair _vertices parseExchPair
    where
      syncMatrix (OutSync ui@UserInput{..}) =
-       InSync ui $ floydWarshall 0 . buildMatrix exchRates . snd . setToMapVector $ vertices
+       InSync ui $ floydWarshall 0 . buildMatrix _exchRates . snd . setToMapVector $ _vertices
      syncMatrix inSyncS = inSyncS
 
 -- | Extract the exchange nodes, the corresponding rates and the timestamp from
@@ -55,7 +55,7 @@ findBestRate =
 updateRates :: Rwst [String]
 updateRates =
   do (time, src, dest, fwdR, bkdR) <- parseRates
-     state (\s -> let newS = updateState time src dest fwdR bkdR s in (showRates . exchRates . extractUi $ newS, newS))
+     state (\s -> let newS = updateState time src dest fwdR bkdR s in (showRates . _exchRates . extractUi $ newS, newS))
   where
     extractUi (InSync ui _) = ui
     extractUi (OutSync ui) = ui
@@ -63,15 +63,15 @@ updateRates =
     showRates = map showRate . M.toAscList
 
     showRate ((src, dest), (rate, time)) =
-      "(" ++ showVertex src ++ ") -- " ++ show rate ++ " " ++ show time ++ " --> (" ++ showVertex dest ++ ")"
+      show src ++ " -- " ++ show rate ++ " " ++ show time ++ " --> " ++ show dest
 
     updateState time src dest fwdR bkdR s =
-      maybe insert updateByTime . M.lookup (src, dest) . exchRates $ ui
+      maybe insert updateByTime . M.lookup (src, dest) . _exchRates $ ui
       where
         ui = extractUi s
-        insert = OutSync . UserInput newRates . flip updateSet [src, dest] . vertices $ ui
-        updateByTime (_, origTime) = if origTime < time then OutSync ui { exchRates = newRates} else s
-        newRates = updateMap (exchRates ui)
+        insert = OutSync . UserInput newRates . flip updateSet [src, dest] . _vertices $ ui
+        updateByTime (_, origTime) = if origTime < time then OutSync ui { _exchRates = newRates} else s
+        newRates = updateMap (_exchRates ui)
                    [ ((dest, src), (bkdR, time))
                    , ((src, dest), (fwdR, time)) ]
 
@@ -84,7 +84,7 @@ validateExchPair vertices =
   mapRWST ( >>= (\tuple@((src, dest), _, _) -> exist src >> exist dest >> return tuple) )
   where
     exist v = if S.member v vertices then Right ()
-              else Left ["(" ++ showVertex v ++ ")" ++ " is not entered before"]
+              else Left [show v ++ " is not entered before"]
 
 parseExchPair :: Rwst (Vertex, Vertex)
 parseExchPair = genericParse exchPairParser
