@@ -18,7 +18,7 @@ import ExchangeRate.Utils
 -- Each entry is filled with the rate between the Vertex if there is any
 -- available from the given `ExchRates` map.  This matrix will be applied the
 -- floydWarshall algorithm
-buildMatrix :: ExchRates -> V.Vector Vertex -> Matrix
+buildMatrix :: ExchRates -> V.Vector Vertex -> Matrix MatrixEntry
 buildMatrix exRates v = updateRow <$> seqNums
   where
     seqNums = V.fromList [0 .. V.length v - 1]
@@ -33,7 +33,7 @@ buildMatrix exRates v = updateRow <$> seqNums
             vtxJ@(Vertex _ ccyJ) = v ! j
 
 -- | The floydWarshall algorithm
-floydWarshall :: Int -> Matrix -> Matrix
+floydWarshall :: Int -> Matrix MatrixEntry -> Matrix MatrixEntry
 floydWarshall k matrix
   | k < matrixSize = floydWarshall (k + 1) $ updateRow <$> seqNums
   | otherwise = matrix
@@ -58,7 +58,7 @@ floydWarshall k matrix
 
 -- | Find the best rate and the path to be taken for the given vertice pair.
 -- And convert the information into output message.
-optimumPath :: (Vertex, Vertex) -> S.Set Vertex -> Matrix -> [String]
+optimumPath :: (Vertex, Vertex) -> S.Set Vertex -> Matrix MatrixEntry -> [String]
 optimumPath (src, dest) set m = either (: []) identity $ do
   srcIdx <- maybeToEither (show src ++ " is not entered before") $ M.lookup src vertexIndexMap
   destIdx <- maybeToEither (show dest ++ " is not entered before") $ M.lookup dest vertexIndexMap

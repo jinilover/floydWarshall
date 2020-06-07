@@ -28,7 +28,7 @@ kraken_usd_btc = ((kraken_usd, kraken_btc), (0.0009, d2017_11_01t09_42_23))
 gdax_btc_usd = ((gdax_btc, gdax_usd), (1001.0, d2017_11_01t09_43_23))
 gdax_usd_btc = ((gdax_usd, gdax_btc), (0.0008, d2017_11_01t09_43_23))
 
-inputMatrix1 :: Matrix
+inputMatrix1 :: Matrix MatrixEntry
 inputMatrix1 = tuplesToMatrix
   [ [(0, []),       (1000, [1]), (0, []),     (1, [3])]
   , [(0.0009, [0]), (0, []),     (1, [2]),    (0, [])]
@@ -36,7 +36,7 @@ inputMatrix1 = tuplesToMatrix
   , [(1, [0]),      (0, []),     (1001, [2]), (0, [])]
   ]
 
-outputMatrix1 :: Matrix
+outputMatrix1 :: Matrix MatrixEntry
 outputMatrix1 = tuplesToMatrix
   [ [(0, []),         (1001, [3,2,1]), (1001, [3,2]), (1, [3])]
   , [(0.0009, [0]),   (0, []),         (1, [2]),      (0.0009, [0,3])]
@@ -44,7 +44,7 @@ outputMatrix1 = tuplesToMatrix
   , [(1, [0]),        (1001, [2,1]),   (1001, [2]),   (0, [])]
   ]
 
-outputMatrix1' :: Matrix
+outputMatrix1' :: Matrix MatrixEntry
 outputMatrix1' = tuplesToMatrix
   [ [(0, []),           (1001, [1]),    (1, [2]),        (1001, [1,3])]
   , [(0.0009, [3,2,0]), (0, []),        (0.0009, [3,2]), (1, [3])]
@@ -52,7 +52,7 @@ outputMatrix1' = tuplesToMatrix
   , [(0, []),           (1, [1]),       (0.0009, [2]),   (0, [])]
   ]
 
-inputMatrix2 :: Matrix
+inputMatrix2 :: Matrix MatrixEntry
 inputMatrix2 = tuplesToMatrix
   [ [(0, []),       (1000, [1]),  (0, []),      (1, [3]),       (1, [4]),     (0, []),      (0, [])]
   , [(0.0009, [0]), (0, []),      (1, [2]),     (0, []),        (0, []),      (1, [5]),     (0, [])]
@@ -63,7 +63,7 @@ inputMatrix2 = tuplesToMatrix
   , [(0, []),       (0, []),      (0, []),      (0, []),        (1.007, [4]), (1000, [5]),  (0, [])]
   ]
 
-outputPathsMatrix2 :: V.Vector (V.Vector [Int])
+outputPathsMatrix2 :: Matrix [Int]
 outputPathsMatrix2 = V.fromList ( V.fromList <$>
   [
     [[], [3,2,5,4,3,2,1], [3,2,5,4,3,2], [3,2,5,4,3], [3,2,5,4], [3,2,5], [3,2,5,4,6]]

@@ -38,18 +38,21 @@ data UserInput =
 
 -- | AppState which represents whether the matrix of the best rates are in-sync
 -- with the UserInput.  This applies the idea of FSM.
-data AppState = InSync UserInput Matrix
+data AppState = InSync UserInput (Matrix MatrixEntry)
               | OutSync UserInput
               deriving (Show, Eq)
 
-type Matrix = V.Vector (V.Vector MatrixEntry)
+type Matrix a = V.Vector (V.Vector a)
 
 type ExchRates = M.Map (Vertex, Vertex) (Double, UTCTime)
 
 type Rwst a = RWST String () AppState (Either [String]) a
 
 emptyUserInput :: UserInput
-emptyUserInput = UserInput M.empty S.empty
+emptyUserInput = 
+  let _exchRates = M.empty
+      _vertices = S.empty
+  in  UserInput{..}
 
 emptyEntry :: MatrixEntry
 emptyEntry = MatrixEntry 0 []
