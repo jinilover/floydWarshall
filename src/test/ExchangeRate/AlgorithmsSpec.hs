@@ -67,13 +67,13 @@ floydWarshallSpec :: Spec
 floydWarshallSpec =
   describe "floydWarshallSpec" $ do
     it "floydWarshall can handle empty matrix" $
-      floydWarshall 0 V.empty `shouldBe` V.empty
+      floydWarshall V.empty `shouldBe` V.empty
     it "floydWarshall on 4*4 matrix" $
-      floydWarshall 0 matrix1 `shouldBe` expectedMatrix1
+      floydWarshall matrix1 `shouldBe` expectedMatrix1
     it "floydWarshall on 7*7 matrix" $
       -- no need to check the rate as it's done in the previous test case
       -- only need to check the path
-      (_path <$>) <$> floydWarshall 0 matrix2 `shouldBe` expectedPaths
+      (_path <$>) <$> floydWarshall matrix2 `shouldBe` expectedPaths
   where
     v1 = V.fromList [kraken_btc, kraken_usd, gdax_usd, gdax_btc]
     matrix1 = buildRateMatrix v1 

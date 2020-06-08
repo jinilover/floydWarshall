@@ -1,4 +1,8 @@
 module ExchangeRate.Algorithms
+  ( buildMatrix
+  , floydWarshall
+  , optimumPath 
+  )
   where
 
 -- import Protolude hiding (maybeToEither)
@@ -6,7 +10,7 @@ import Data.String (String)
 -- import Data.Either.Utils
 import Data.List.HT
 
-import Data.Vector as V hiding ((++))
+import Data.Vector as V hiding ((++), any)
 
 import qualified Data.Map as M
 import qualified Data.Set as S
@@ -22,37 +26,40 @@ buildMatrix :: ExchRates -> V.Vector Vertex -> Matrix RateEntry
 buildMatrix exRates vertices = buildRow <$> indices
   where
     indices = V.fromList [0 .. V.length vertices - 1]
-    buildRow i = let defaultEntry = emptyEntry (vertices ! i) in buildCol defaultEntry <$> indices
+    buildRow rowNum = let defaultEntry = emptyEntry (vertices ! rowNum) in buildCol defaultEntry <$> indices
       where
-        buildCol defaultEntry@(RateEntry _ vtxI _) j
-          | i == j = defaultEntry
+        buildCol defaultEntry@(RateEntry _ vtxI _) colNum
+          | rowNum == colNum = defaultEntry
           | _ccy vtxI == _ccy vtxJ = defaultEntry {_bestRate = 1.0, _path = [vtxJ]}
           | otherwise = case M.lookup (vtxI, vtxJ) exRates of
                           Just (rate, _) -> defaultEntry {_bestRate = rate, _path = [vtxJ]}
                           _ -> defaultEntry
           where
-            vtxJ = vertices ! j
+            vtxJ = vertices ! colNum
 
 -- | The floydWarshall algorithm
-floydWarshall :: Int -> Matrix RateEntry -> Matrix RateEntry -- TODO remove Int
-floydWarshall k matrix
-  | k < matrixSize = floydWarshall (k + 1) $ updateRow <$> indices
+floydWarshall :: Matrix RateEntry -> Matrix RateEntry
+floydWarshall = runAlgo 0
+
+runAlgo :: Int -> Matrix RateEntry -> Matrix RateEntry
+runAlgo k matrix -- k counts the number of iteration
+  | k < matrixSize = runAlgo (k + 1) (indices <&> updateRow)
   | otherwise = matrix
   where
     matrixSize = V.length matrix
     indices = V.fromList [0 .. matrixSize - 1]
-    updateRow i
-      | i == k = matrix ! k
-      | otherwise = updateCol <$> indices
+    updateRow rowNum
+      | rowNum == k = matrix ! k
+      | otherwise = indices <&> updateCol 
       where
-        updateCol j
-          | i == j || k == j = matrix ! i ! j
+        updateCol colNum
+          | any (== colNum) [rowNum, k] = matrix ! rowNum ! colNum
           | _bestRate origEntry < newRate = origEntry {_bestRate = newRate, _path = ikPath ++ kjPath}
           | otherwise = origEntry
           where
-            origEntry = matrix ! i ! j
-            RateEntry ikRate _ ikPath = matrix ! i ! k
-            RateEntry kjRate _ kjPath = matrix ! k ! j
+            origEntry = matrix ! rowNum ! colNum
+            RateEntry ikRate _ ikPath = matrix ! rowNum ! k
+            RateEntry kjRate _ kjPath = matrix ! k ! colNum
             newRate = ikRate * kjRate
 
 -- | Find the best rate and the path to be taken for the given vertice pair.

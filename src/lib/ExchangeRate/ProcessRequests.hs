@@ -47,7 +47,7 @@ findBestRate =
      (\p -> optimumPath p _vertices m) <$> validateExchPair _vertices parseExchPair
    where
      syncMatrix (OutSync ui@UserInput{..}) =
-       InSync ui $ floydWarshall 0 . buildMatrix _exchRates . snd . setToMapVector $ _vertices
+       InSync ui $ floydWarshall . buildMatrix _exchRates . snd . setToMapVector $ _vertices
      syncMatrix inSyncS = inSyncS
 
 -- | Extract the exchange nodes, the corresponding rates and the timestamp from
