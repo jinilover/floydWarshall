@@ -27,5 +27,7 @@ updateMap = foldl (\m (k, v) -> M.insert k v m)
 updateSet :: Ord v => S.Set v -> [v] -> S.Set v
 updateSet = foldl . flip $ S.insert
 
-emptyEntry :: Vertex -> RateEntry
-emptyEntry start = RateEntry 0.0 start []
+-- | Create a `RateEntry` for a vertex that has no exchange rate 
+-- with any other exchange yet
+isolatedEntry :: Vertex -> RateEntry
+isolatedEntry start = RateEntry 0.0 start []

@@ -13,7 +13,7 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 
 import Types
-import ExchangeRate.Utils (emptyEntry, indexOfElem)
+import ExchangeRate.Utils (isolatedEntry, indexOfElem)
 
 -- | Build a matrix of n*n size where n is the size of the `Vertex` vector
 -- Each entry is filled with the rate between the Vertex if there is any
@@ -23,40 +23,40 @@ buildMatrix :: ExchRates -> V.Vector Vertex -> Matrix RateEntry
 buildMatrix exRates vertices = buildRow <$> indices
   where
     indices = V.fromList [0 .. V.length vertices - 1]
-    buildRow rowNum = let defaultEntry = emptyEntry (vertices ! rowNum) in buildCol defaultEntry <$> indices
+    buildRow i = let entry = isolatedEntry (vertices ! i) in buildCol entry <$> indices
       where
-        buildCol defaultEntry@(RateEntry _ vtxI _) colNum
-          | rowNum == colNum = defaultEntry
-          | _ccy vtxI == _ccy vtxJ = defaultEntry {_bestRate = 1.0, _path = [vtxJ]}
+        buildCol entry@(RateEntry _ vtxI _) j
+          | i == j = entry -- i is row number, j is column number
+          | _ccy vtxI == _ccy vtxJ = entry {_bestRate = 1.0, _path = [vtxJ]}
           | otherwise = case M.lookup (vtxI, vtxJ) exRates of
-                          Just (rate, _) -> defaultEntry {_bestRate = rate, _path = [vtxJ]}
-                          _ -> defaultEntry
+                          Just (rate, _) -> entry {_bestRate = rate, _path = [vtxJ]}
+                          _ -> entry
           where
-            vtxJ = vertices ! colNum
+            vtxJ = vertices ! j
 
 -- | The floydWarshall algorithm
 floydWarshall :: Matrix RateEntry -> Matrix RateEntry
 floydWarshall = runAlgo 0
 
 runAlgo :: Int -> Matrix RateEntry -> Matrix RateEntry
-runAlgo k matrix -- k counts the number of iteration
+runAlgo k matrix -- k is the number of times to run this algo
   | k < matrixSize = let newMatrix = indices <&> updateRow in runAlgo (k + 1) newMatrix
   | otherwise = matrix
   where
     matrixSize = V.length matrix
     indices = V.fromList [0 .. matrixSize - 1]
-    updateRow rowNum
-      | rowNum == k = matrix ! k
+    updateRow i
+      | i == k = matrix ! k
       | otherwise = indices <&> updateCol 
       where
-        updateCol colNum
-          | any (== colNum) [rowNum, k] = origEntry
+        updateCol j
+          | any (== j) [i, k] = origEntry
           | _bestRate origEntry < newRate = origEntry {_bestRate = newRate, _path = ikPath ++ kjPath}
           | otherwise = origEntry
           where
-            origEntry = matrix ! rowNum ! colNum
-            RateEntry ikRate _ ikPath = matrix ! rowNum ! k
-            RateEntry kjRate _ kjPath = matrix ! k ! colNum
+            origEntry = matrix ! i ! j
+            RateEntry ikRate _ ikPath = matrix ! i ! k
+            RateEntry kjRate _ kjPath = matrix ! k ! j
             newRate = ikRate * kjRate
 
 -- | Return the best rate and the path 
