@@ -5,10 +5,7 @@ module ExchangeRate.Algorithms
   )
   where
 
--- import Protolude hiding (maybeToEither)
 import Data.String (String)
--- import Data.Either.Utils
--- import Data.List.HT
 
 import Data.Vector as V hiding ((++), any, null)
 

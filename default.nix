@@ -1,6 +1,6 @@
 { mkDerivation, base-noprelude, classy-prelude, containers, hspec
-, HUnit, MissingH, parsec, protolude, split, stdenv, time
-, utility-ht, vector, writer-cps-mtl
+, HUnit, parsec, protolude, split, stdenv, time, vector
+, writer-cps-mtl
 }:
 mkDerivation {
   pname = "fsm-rwst-parsec-floydWarshall";
@@ -9,16 +9,16 @@ mkDerivation {
   isLibrary = true;
   isExecutable = true;
   libraryHaskellDepends = [
-    base-noprelude classy-prelude containers MissingH parsec protolude
-    split time utility-ht vector writer-cps-mtl
+    base-noprelude classy-prelude containers parsec protolude split
+    time vector writer-cps-mtl
   ];
   executableHaskellDepends = [
-    base-noprelude classy-prelude containers MissingH parsec protolude
-    split time utility-ht vector writer-cps-mtl
+    base-noprelude classy-prelude containers parsec protolude split
+    time vector writer-cps-mtl
   ];
   testHaskellDepends = [
-    base-noprelude classy-prelude containers hspec HUnit MissingH
-    parsec protolude split time utility-ht vector writer-cps-mtl
+    base-noprelude classy-prelude containers hspec HUnit parsec
+    protolude split time vector writer-cps-mtl
   ];
   description = "Apply FloydWarshall algorithm";
   license = "unknown";

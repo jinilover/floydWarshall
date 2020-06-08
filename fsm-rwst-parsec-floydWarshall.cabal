@@ -12,15 +12,13 @@ common lang
                     , BlockArguments
 
 common deps
-  build-depends:        MissingH
-                      , base-noprelude
+  build-depends:        base-noprelude
                       , classy-prelude
                       , containers
                       , parsec
                       , protolude
                       , split
                       , time
-                      , utility-ht
                       , vector
                       , writer-cps-mtl
 
