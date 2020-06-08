@@ -13,6 +13,7 @@ import Types
 -- | Convert a `Vertex` set to a Vertice vector and a map of the `Vertex` to
 -- its index in the `Vector`.  `Vector` is better performed in indexing an
 -- element.
+-- TODO reconsider the return type
 setToMapVector :: S.Set Vertex -> (M.Map Vertex Int, V.Vector Vertex)
 setToMapVector s = (M.fromList $ zip l [0 .. length l], V.fromList l)
   where

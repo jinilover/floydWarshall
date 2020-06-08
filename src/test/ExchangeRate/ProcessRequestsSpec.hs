@@ -53,6 +53,7 @@ combineRWSTSpec =
         (runRWST combineRWST "2017-11-0109:42:23+00:00 KRAKEN BTC USD 1000.0 0.0009")
         appStates >>= (`shouldBe` (False, , w) <$> appStates)
 
+-- TODO to be removed
 updateRatesSpec :: Spec
 updateRatesSpec =
   describe "updateRatesSpec" $ do
@@ -92,6 +93,48 @@ updateRatesSpec =
           strings = [ "2017-11-01T09:42:20+00:00 KRAKEN USD BTC 0.00089 1001.1"
                     , "2017-11-01T09:42:23+00:00 KRAKEN USD BTC 0.00089 1001.1" ] in
       nub (runRWST updateRates <$> strings <*> appStates)
+        `shouldBe` Right . (a, , ()) <$> appStates
+
+updateRatesSpec' :: Spec
+updateRatesSpec' = 
+  describe "updateRatesSpec'" $ do
+    let rwst = updateRates' :: RWST String () AppState (Either String) [String]
+    it "orig AppState has empty UserInput, success update should return OutSync with added rates" $
+      let a = [ "(KRAKEN, BTC) -- 1000.0 2017-11-01 09:42:23 UTC --> (KRAKEN, USD)"
+              , "(KRAKEN, USD) -- 9.0e-4 2017-11-01 09:42:23 UTC --> (KRAKEN, BTC)" ]
+          s = OutSync ui1
+          expected = Right (a, s, ()) in
+      runRWST rwst "2017-11-01T09:42:23+00:00 KRAKEN BTC USD 1000.0 0.0009"
+        (OutSync emptyUserInput) `shouldBe` expected
+    it "no matter orig AppState is either InSync or OutSync, success update should return OutSync of added rates" $
+      let a = [ "(GDAX, BTC) -- 1001.0 2017-11-01 09:43:23 UTC --> (GDAX, USD)" -- entry due to added rate
+              , "(GDAX, USD) -- 8.0e-4 2017-11-01 09:43:23 UTC --> (GDAX, BTC)" -- entry due to added rate
+              , "(KRAKEN, BTC) -- 1000.0 2017-11-01 09:42:23 UTC --> (KRAKEN, USD)"
+              , "(KRAKEN, USD) -- 9.0e-4 2017-11-01 09:42:23 UTC --> (KRAKEN, BTC)" ]
+          s = OutSync $ ui1 { _exchRates = updateMap (_exchRates ui1) [gdax_btc_usd, gdax_usd_btc]
+                                      , _vertices = updateSet (_vertices ui1) [gdax_btc, gdax_usd] }
+          expected = Right (a, s, ())
+          appStates = [InSync ui1 emptyMatrix, OutSync ui1] in
+      runRWST rwst "2017-11-01T09:43:23+00:00 GDAX BTC USD 1001.0 0.0008" <$>
+        appStates `shouldBe` replicate 2 expected
+    it "update the rate by the newer timestamp no matter the exchange currency cases" $
+      let a = [ "(GDAX, BTC) -- 1001.0 2017-11-01 09:43:23 UTC --> (GDAX, USD)"
+              , "(GDAX, USD) -- 8.0e-4 2017-11-01 09:43:23 UTC --> (GDAX, BTC)"
+              , "(KRAKEN, BTC) -- 1001.1 2017-11-01 09:42:24 UTC --> (KRAKEN, USD)" -- entry due to newer ts
+              , "(KRAKEN, USD) -- 8.9e-4 2017-11-01 09:42:24 UTC --> (KRAKEN, BTC)" ] -- entry due to new ts
+          s = OutSync $ ui2 { _exchRates = updateMap (_exchRates ui2)
+                              [((kraken_btc, kraken_usd), (1001.1, d2017_11_01t09_42_24)), ((kraken_usd, kraken_btc), (0.00089, d2017_11_01t09_42_24))] }
+          expected = Right (a, s, ())
+          strings = [ "2017-11-01T09:42:24+00:00 KRAKEN USD BTC 0.00089 1001.1"
+                    , "2017-11-01T09:42:24+00:00 kraken usd btc 0.00089 1001.1"] in
+      (\r -> runRWST rwst r $ OutSync ui2) <$> strings `shouldBe` replicate 2 expected
+    it "no matter orig AppState is either InSync or OutSync, AppState remain the same as input ts are not newer" $
+      let a = [ "(KRAKEN, BTC) -- 1000.0 2017-11-01 09:42:23 UTC --> (KRAKEN, USD)"
+              , "(KRAKEN, USD) -- 9.0e-4 2017-11-01 09:42:23 UTC --> (KRAKEN, BTC)" ]
+          appStates = [InSync ui1 emptyMatrix, OutSync ui1]
+          strings = [ "2017-11-01T09:42:20+00:00 KRAKEN USD BTC 0.00089 1001.1"
+                    , "2017-11-01T09:42:23+00:00 KRAKEN USD BTC 0.00089 1001.1" ] in
+      nub (runRWST rwst <$> strings <*> appStates)
         `shouldBe` Right . (a, , ()) <$> appStates
 
 -- TODO to be removed
@@ -163,4 +206,4 @@ emptyMatrix = V.empty -- updateRates doesn't care the matrix value
 -- expectErrorMsg _ s = assertFailure ("Expected error msg: " ++ s)
 
 specs :: [Spec]
-specs = [combineRWSTSpec, findBestRateSpec, findBestRateSpec', updateRatesSpec]
+specs = [combineRWSTSpec, findBestRateSpec, findBestRateSpec', updateRatesSpec, updateRatesSpec']

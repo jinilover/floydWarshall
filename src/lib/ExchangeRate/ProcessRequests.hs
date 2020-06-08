@@ -5,7 +5,8 @@ module ExchangeRate.ProcessRequests
   ( combineRWST
   , findBestRate
   , findBestRate'
-  , updateRates )
+  , updateRates
+  , updateRates' )
   where
 
 import Data.Maybe (isNothing, fromJust)
@@ -118,7 +119,7 @@ updateRates' =
     r <- ask
     (time, src, dest, fwdR, bkdR) <- liftEither $ parseRates' r
     ui@UserInput{..} <- get <&> uiFromState
-    let rateOutdated = M.lookup (src, dest) _exchRates <&> \(_, origTime) -> origTime < time
+    let rateOutdated = M.lookup (src, dest) _exchRates <&> ((< time) . snd)
         updateRequired = isNothing rateOutdated || fromJust rateOutdated
     when updateRequired (put $ newState time src dest fwdR bkdR ui)
     ui' <- get <&> uiFromState
