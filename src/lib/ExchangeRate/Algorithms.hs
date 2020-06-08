@@ -59,7 +59,7 @@ runAlgo k matrix -- k counts the number of iteration
             RateEntry kjRate _ kjPath = matrix ! k ! colNum
             newRate = ikRate * kjRate
 
--- | Return the best rate and the path to be taken 
+-- | Return the best rate and the path 
 -- for the provided `src` and `dest` vertices if it exists
 optimum :: Vertex -> Vertex -> S.Set Vertex -> Matrix RateEntry -> Either String (Double, [Vertex])
 optimum src dest set matrix = 
@@ -68,5 +68,5 @@ optimum src dest set matrix =
     destIdx <- maybeToEither (show dest ++ " is not entered before") $ indexOfElem dest set
     let RateEntry{..} = matrix ! srcIdx ! destIdx
     if null _path 
-      then Left "Not reachable" 
+      then Left $ "There is no exchange between " ++ show src ++ " and " ++ show dest 
       else Right (_bestRate, _path)

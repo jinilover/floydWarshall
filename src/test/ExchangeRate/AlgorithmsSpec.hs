@@ -109,9 +109,9 @@ floydWarshallSpec =
       , [[4,3,2,5,4,0], [4,3,2,5,4,3,2,1], [4,3,2,5,4,3,2], [4,3,2,5,4,3], [4,3,2,5,4], [4,3,2,5], []]
       ]
 
-optimumPathSpec :: Spec
-optimumPathSpec =
-  describe "optimumPathSpec" $ do
+optimumSpec :: Spec
+optimumSpec =
+  describe "optimumSpec" $ do
     it "Source not exists in the graph" $
       optimum kraken_stc kraken_usd vertexSet matrix1 `shouldBe`
         Left "(KRAKEN, STC) is not entered before"
@@ -120,7 +120,7 @@ optimumPathSpec =
         Left "(KRAKEN, STC) is not entered before"
     it "Source cannot reach destination in the graph" $
       optimum kraken_usd gdax_btc vertexSet matrix2 `shouldBe`
-        Left "Not reachable"
+        Left "There is no exchange between (KRAKEN, USD) and (GDAX, BTC)"
     it "Reachable from kraken_btc to gdax_usd" $
       optimum kraken_btc gdax_usd vertexSet matrix2 `shouldBe`
         Right (1001.0, [Vertex "GDAX" "BTC", Vertex "GDAX" "USD"])
@@ -145,4 +145,4 @@ optimumPathSpec =
       ]
 
 specs :: [Spec]
-specs = [buildMatrixSpec, floydWarshallSpec, optimumPathSpec]
+specs = [buildMatrixSpec, floydWarshallSpec, optimumSpec]
