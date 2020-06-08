@@ -2,7 +2,6 @@ module Types where
 
 import Data.Time
 import Data.String (String)
-import Control.Monad.RWS.CPS
 import qualified Data.Map as M
 import qualified Data.Vector as V
 import qualified Data.Set as S
@@ -44,7 +43,7 @@ type Matrix a = V.Vector (V.Vector a)
 
 type ExchRates = M.Map (Vertex, Vertex) (Double, UTCTime)
 
-type Rwst a = RWST String () AppState (Either [String]) a
+-- type Rwst a = RWST String () AppState (Either [String]) a
 
 emptyUserInput :: UserInput
 emptyUserInput = 

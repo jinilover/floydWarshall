@@ -15,6 +15,7 @@ common deps
   build-depends:        base-noprelude
                       , classy-prelude
                       , containers
+                      , mtl
                       , parsec
                       , protolude
                       , split

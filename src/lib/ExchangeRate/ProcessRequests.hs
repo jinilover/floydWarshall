@@ -9,10 +9,10 @@ module ExchangeRate.ProcessRequests
 
 import Data.String (String)
 import Data.Time
--- import Text.Parsec hiding (State)
 import Text.Parsec.String
 import Control.Arrow
 import Control.Monad.RWS.CPS
+import Control.Monad.Except (liftEither)
 
 import qualified Data.Set as S
 import qualified Data.Map as M
@@ -39,7 +39,7 @@ combineRWST = executeRWST updateRates >>= nextRwst
 -- (provided by the input string) from the 'AppState' containing
 -- the exchange rates between exchange nodes.  It uses floyd-warshall algo
 -- to calculate the best rate.
-findBestRate :: Rwst [String]
+findBestRate :: RWST String () AppState (Either [String]) [String]
 findBestRate =
   do s <- get
      let (ui@UserInput{..}, m) = syncMatrix s
@@ -61,10 +61,26 @@ findBestRate =
             footer = "BEST_RATES_END"
        in   header : path ++ [footer]
 
+findBestRate' 
+  :: (MonadReader String m, MonadError String m, MonadState AppState m)
+  => m (Double, [Vertex])
+findBestRate' =
+  do
+    r <- ask
+    (src, dest) <- liftEither $ parseExchPair' r
+    s <- get
+    let (ui@UserInput{..}, matrix) = syncMatrix s
+    put $ InSync ui matrix
+    liftEither $ optimum src dest _vertices matrix
+    where
+      syncMatrix (OutSync ui@UserInput{..}) =
+        let syncdMatrix = floydWarshall . buildMatrix _exchRates . snd . setToMapVector $ _vertices
+        in  (ui, syncdMatrix)
+      syncMatrix (InSync ui syncdMatrix) = (ui,syncdMatrix)
 
 -- | Extract the exchange nodes, the corresponding rates and the timestamp from
 -- the input string and stores the rates to 'AppState' if the timestamp is newer.
-updateRates :: Rwst [String]
+updateRates :: RWST String () AppState (Either [String])  [String]
 updateRates =
   do (time, src, dest, fwdR, bkdR) <- parseRates
      state (\s -> let newS = updateState time src dest fwdR bkdR s in (showRates . _exchRates . extractUi $ newS, newS))
@@ -89,20 +105,24 @@ updateRates =
 
 -- | make sure the given vertice pair from the 'RWST' exist in the given
 -- 'Set Vertex'
+-- TODO S.Set Vertex comes from the state, it is not needed
+-- this validation is not needed because `optimum` call will check it
 validateExchPair :: S.Set Vertex ->
-                    Rwst (Vertex, Vertex) ->
-                    Rwst (Vertex, Vertex)
+                    RWST String () AppState (Either [String]) (Vertex, Vertex) ->
+                    RWST String () AppState (Either [String]) (Vertex, Vertex)
 validateExchPair vertices =
   mapRWST ( >>= (\tuple@((src, dest), _, _) -> exist src >> exist dest >> return tuple) )
   where
     exist v = if S.member v vertices then Right ()
               else Left [show v ++ " is not entered before"]
 
-parseExchPair :: Rwst (Vertex, Vertex)
+-- TODO remove the following 3 functions
+parseExchPair :: RWST String () AppState (Either [String]) (Vertex, Vertex)
 parseExchPair = genericParse exchPairParser
 
-parseRates :: Rwst (UTCTime, Vertex, Vertex, Double, Double)
+parseRates :: RWST String () AppState (Either [String]) (UTCTime, Vertex, Vertex, Double, Double)
 parseRates = genericParse exchRatesParser
 
-genericParse :: Parser a -> Rwst a
+genericParse :: Parser a -> RWST String () AppState (Either [String]) a
 genericParse p = rwsT (\r s -> fmap (, s, ()) . left parseErrorMsgs $ simpleParse p r)
+

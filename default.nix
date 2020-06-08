@@ -1,5 +1,5 @@
 { mkDerivation, base-noprelude, classy-prelude, containers, hspec
-, HUnit, parsec, protolude, split, stdenv, time, vector
+, HUnit, mtl, parsec, protolude, split, stdenv, time, vector
 , writer-cps-mtl
 }:
 mkDerivation {
@@ -9,15 +9,15 @@ mkDerivation {
   isLibrary = true;
   isExecutable = true;
   libraryHaskellDepends = [
-    base-noprelude classy-prelude containers parsec protolude split
+    base-noprelude classy-prelude containers mtl parsec protolude split
     time vector writer-cps-mtl
   ];
   executableHaskellDepends = [
-    base-noprelude classy-prelude containers parsec protolude split
+    base-noprelude classy-prelude containers mtl parsec protolude split
     time vector writer-cps-mtl
   ];
   testHaskellDepends = [
-    base-noprelude classy-prelude containers hspec HUnit parsec
+    base-noprelude classy-prelude containers hspec HUnit mtl parsec
     protolude split time vector writer-cps-mtl
   ];
   description = "Apply FloydWarshall algorithm";
