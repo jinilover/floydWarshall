@@ -15,7 +15,7 @@ import Types
 import ExchangeRate.Utils
 import ExchangeRate.ProcessRequests
 import ExchangeRate.MockData
-import ExchangeRate.TestUtils
+import ExchangeRate.TestUtils (buildRateMatrix)
 
 combineRWSTSpec :: Spec
 combineRWSTSpec =
@@ -116,12 +116,14 @@ outSyncUi2 :: AppState
 outSyncUi2 = OutSync ui2
 
 inSyncUi2 :: AppState
-inSyncUi2 = InSync ui2 $ tuplesToMatrix bestMatrix
-  where
-    bestMatrix = [ [(0.0, []), (1001.0, [1]), (1.0, [2]), (1001.0, [1,3])]
-                 , [(0.0009, [3,2,0]), (0.0, []), (0.0009, [3,2]), (1.0, [3])]
-                 , [(1.0, [0]), (1001.0, [0,1]), (0.0, []), (1001.0, [0,1,3])]
-                 , [(0.0009, [2,0]), (1.0, [1]), (0.0009, [2]), (0.0, [])] ]
+inSyncUi2 = 
+  let vertex = V.fromList [gdax_btc, gdax_usd, kraken_btc, kraken_usd]
+      matrixOfTuples = 
+        [ [(0.0, []), (1001.0, [1]), (1.0, [2]), (1001.0, [1,3])]
+        , [(0.0009, [3,2,0]), (0.0, []), (0.0009, [3,2]), (1.0, [3])]
+        , [(1.0, [0]), (1001.0, [0,1]), (0.0, []), (1001.0, [0,1,3])]
+        , [(0.0009, [2,0]), (1.0, [1]), (0.0009, [2]), (0.0, [])] ]
+  in InSync ui2 $ buildRateMatrix vertex matrixOfTuples
 
 ui1 :: UserInput
 ui1 = UserInput (M.fromList [kraken_btc_usd, kraken_usd_btc]) (S.fromList [kraken_btc, kraken_usd])

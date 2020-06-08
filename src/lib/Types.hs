@@ -17,15 +17,13 @@ data Vertex =
 instance Show Vertex where
   show Vertex{..} = "(" ++ _exch ++ ", " ++ _ccy ++ ")"
 
--- | Rate entry composes of the best rate, and the path taken to
--- achieve it.  It contains numbers that represent the vertices and
--- used as the matrice indices.
--- e.g. if path is [0, 3], the vertex i should be exchanged via vertex 0 and
--- then vertex 3 to get the best rate with vertex 3
+-- | Rate entry composes of the best rate, the starting vertex 
+-- and the path taken to achieve that rate.  
 data RateEntry = 
   RateEntry {
     _bestRate :: Double
-  , _path :: [Int]
+  , _start :: Vertex
+  , _path :: [Vertex]
   } deriving (Show, Eq)
 
 -- | Contains the most updated exchange rates between vertices
@@ -53,6 +51,3 @@ emptyUserInput =
   let _exchRates = M.empty
       _vertices = S.empty
   in  UserInput{..}
-
-emptyEntry :: RateEntry
-emptyEntry = RateEntry 0 []
