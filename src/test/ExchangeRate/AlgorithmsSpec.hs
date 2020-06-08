@@ -12,6 +12,7 @@ import Data.Vector as V
 
 import Types
 import ExchangeRate.Algorithms
+import ExchangeRate.Utils (setToVector)
 
 import ExchangeRate.MockData
 import ExchangeRate.TestUtils (listsToMatrix, buildRateMatrix)
@@ -113,24 +114,23 @@ optimumSpec :: Spec
 optimumSpec =
   describe "optimumSpec" $ do
     it "Source not exists in the graph" $
-      optimum kraken_stc kraken_usd vertexSet matrix1 `shouldBe`
+      optimum kraken_stc kraken_usd vertexVector matrix1 `shouldBe`
         Left "(KRAKEN, STC) is not entered before"
     it "Destination not exists in the graph" $
-      optimum kraken_btc kraken_stc vertexSet matrix1 `shouldBe`
+      optimum kraken_btc kraken_stc vertexVector matrix1 `shouldBe`
         Left "(KRAKEN, STC) is not entered before"
     it "Source cannot reach destination in the graph" $
-      optimum kraken_usd gdax_btc vertexSet matrix2 `shouldBe`
+      optimum kraken_usd gdax_btc vertexVector matrix2 `shouldBe`
         Left "There is no exchange between (KRAKEN, USD) and (GDAX, BTC)"
     it "Reachable from kraken_btc to gdax_usd" $
-      optimum kraken_btc gdax_usd vertexSet matrix2 `shouldBe`
+      optimum kraken_btc gdax_usd vertexVector matrix2 `shouldBe`
         Right (1001.0, [Vertex "GDAX" "BTC", Vertex "GDAX" "USD"])
     it "Reachable from gdax_usd to gdax_btc" $
-      optimum gdax_usd gdax_btc vertexSet matrix2 `shouldBe`
+      optimum gdax_usd gdax_btc vertexVector matrix2 `shouldBe`
         Right (9.0e-4, [Vertex "KRAKEN" "USD", Vertex "KRAKEN" "BTC", Vertex "GDAX" "BTC"])
   where
     vertices = [kraken_btc, kraken_usd, gdax_usd, gdax_btc]
-    vertexSet = S.fromList vertices
-    vertexVector = V.fromList $ S.toList vertexSet
+    vertexVector = setToVector $ S.fromList vertices
     matrix1 = buildRateMatrix vertexVector
       [ [(0, []),         (1001, [3,2,1]), (1001, [3,2]), (1, [3])]
       , [(0.0009, [0]),   (0, []),         (1, [2]),      (0.0009, [0,3])]

@@ -23,7 +23,7 @@ import qualified Data.Map as M
 import Types
 import ExchangeRate.Algorithms
 import ExchangeRate.Parsers
-import ExchangeRate.Utils (updateMap, updateSet, setToMapVector)
+import ExchangeRate.Utils (updateMap, updateSet, setToVector)
 
 -- | Combine 'updateRates RWST' and 'findBestRate RWST'.  If the first 'RWST'
 -- execution fails, it will execute the second one.
@@ -48,10 +48,10 @@ findBestRate =
      let (ui@UserInput{..}, m) = syncMatrix s
      put $ InSync ui m
      (src, dest) <- validateExchPair _vertices parseExchPair
-     return . present src dest $ optimum src dest _vertices m
+     return . present src dest $ optimum src dest (setToVector _vertices) m
    where
      syncMatrix (OutSync ui@UserInput{..}) =
-       let  syncdMatrix = floydWarshall . buildMatrix _exchRates . snd . setToMapVector $ _vertices
+       let  syncdMatrix = floydWarshall . buildMatrix _exchRates . setToVector $ _vertices
        in   (ui, syncdMatrix)
      syncMatrix (InSync ui syncdMatrix) = (ui,syncdMatrix)
      present _ _ (Left err) = [err]
@@ -79,10 +79,10 @@ findBestRate' =
     s <- get
     let (ui@UserInput{..}, matrix, isStateChanged) = syncMatrix s
     when isStateChanged (put $ InSync ui matrix)
-    liftEither $ optimum src dest _vertices matrix <&> (<&> (src :))
+    liftEither $ optimum src dest (setToVector _vertices) matrix <&> (<&> (src :))
     where
       syncMatrix (OutSync ui@UserInput{..}) =
-        let syncdMatrix = floydWarshall . buildMatrix _exchRates . snd . setToMapVector $ _vertices
+        let syncdMatrix = floydWarshall . buildMatrix _exchRates . setToVector $ _vertices
         in  (ui, syncdMatrix, True)
       syncMatrix (InSync ui syncdMatrix) = (ui,syncdMatrix, False)
 
