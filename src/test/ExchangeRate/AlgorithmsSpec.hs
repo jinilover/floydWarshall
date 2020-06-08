@@ -113,29 +113,20 @@ optimumPathSpec :: Spec
 optimumPathSpec =
   describe "optimumPathSpec" $ do
     it "Source not exists in the graph" $
-      optimumPath (kraken_stc, kraken_usd) vertexSet matrix1 `shouldBe`
-        ["(KRAKEN, STC) is not entered before"]
+      optimum kraken_stc kraken_usd vertexSet matrix1 `shouldBe`
+        Left "(KRAKEN, STC) is not entered before"
     it "Destination not exists in the graph" $
-      optimumPath (kraken_btc, kraken_stc) vertexSet matrix1 `shouldBe`
-        ["(KRAKEN, STC) is not entered before"]
+      optimum kraken_btc kraken_stc vertexSet matrix1 `shouldBe`
+        Left "(KRAKEN, STC) is not entered before"
     it "Source cannot reach destination in the graph" $
-      optimumPath (kraken_usd, gdax_btc) vertexSet matrix2 `shouldBe`
-        ["Not reachable"]
+      optimum kraken_usd gdax_btc vertexSet matrix2 `shouldBe`
+        Left "Not reachable"
     it "Reachable from kraken_btc to gdax_usd" $
-      optimumPath (kraken_btc, gdax_usd) vertexSet matrix2 `shouldBe`
-        [ "BEST_RATES_BEGIN KRAKEN BTC GDAX USD 1001.0"
-        , "(KRAKEN, BTC)"
-        , "(GDAX, BTC)"
-        , "(GDAX, USD)"
-        , "BEST_RATES_END"]
+      optimum kraken_btc gdax_usd vertexSet matrix2 `shouldBe`
+        Right (1001.0, [Vertex "GDAX" "BTC", Vertex "GDAX" "USD"])
     it "Reachable from gdax_usd to gdax_btc" $
-      optimumPath (gdax_usd, gdax_btc) vertexSet matrix2 `shouldBe`
-        [ "BEST_RATES_BEGIN GDAX USD GDAX BTC 9.0e-4"
-        , "(GDAX, USD)"
-        , "(KRAKEN, USD)"
-        , "(KRAKEN, BTC)"
-        , "(GDAX, BTC)"
-        , "BEST_RATES_END"]
+      optimum gdax_usd gdax_btc vertexSet matrix2 `shouldBe`
+        Right (9.0e-4, [Vertex "KRAKEN" "USD", Vertex "KRAKEN" "BTC", Vertex "GDAX" "BTC"])
   where
     vertices = [kraken_btc, kraken_usd, gdax_usd, gdax_btc]
     vertexSet = S.fromList vertices

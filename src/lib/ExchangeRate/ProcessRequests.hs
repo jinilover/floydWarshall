@@ -44,11 +44,22 @@ findBestRate =
   do s <- get
      let newS@(InSync UserInput{..} m) = syncMatrix s
      put newS
-     (\p -> optimumPath p _vertices m) <$> validateExchPair _vertices parseExchPair
+     (src, dest) <- validateExchPair _vertices parseExchPair
+     return . present src dest $ optimum src dest _vertices m
    where
      syncMatrix (OutSync ui@UserInput{..}) =
        InSync ui $ floydWarshall . buildMatrix _exchRates . snd . setToMapVector $ _vertices
      syncMatrix inSyncS = inSyncS
+     present _ _ (Left err) = [err]
+     present src@(Vertex srcExch srcCcy) (Vertex destExch destCcy) (Right (rate, vertices)) = 
+       let  header = "BEST_RATES_BEGIN " ++ 
+                      srcExch ++ " " ++ srcCcy ++ " " ++ 
+                      destExch ++ " " ++ destCcy ++ " " ++ 
+                      show rate
+            path = show <$> src : vertices       
+            footer = "BEST_RATES_END"
+       in   header : path ++ [footer]
+
 
 -- | Extract the exchange nodes, the corresponding rates and the timestamp from
 -- the input string and stores the rates to 'AppState' if the timestamp is newer.

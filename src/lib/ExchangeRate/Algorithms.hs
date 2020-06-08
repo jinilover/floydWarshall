@@ -1,16 +1,16 @@
 module ExchangeRate.Algorithms
   ( buildMatrix
   , floydWarshall
-  , optimumPath 
+  , optimum
   )
   where
 
 -- import Protolude hiding (maybeToEither)
 import Data.String (String)
 -- import Data.Either.Utils
-import Data.List.HT
+-- import Data.List.HT
 
-import Data.Vector as V hiding ((++), any)
+import Data.Vector as V hiding ((++), any, null)
 
 import qualified Data.Map as M
 import qualified Data.Set as S
@@ -43,7 +43,7 @@ floydWarshall = runAlgo 0
 
 runAlgo :: Int -> Matrix RateEntry -> Matrix RateEntry
 runAlgo k matrix -- k counts the number of iteration
-  | k < matrixSize = runAlgo (k + 1) (indices <&> updateRow)
+  | k < matrixSize = let newMatrix = indices <&> updateRow in runAlgo (k + 1) newMatrix
   | otherwise = matrix
   where
     matrixSize = V.length matrix
@@ -53,7 +53,7 @@ runAlgo k matrix -- k counts the number of iteration
       | otherwise = indices <&> updateCol 
       where
         updateCol colNum
-          | any (== colNum) [rowNum, k] = matrix ! rowNum ! colNum
+          | any (== colNum) [rowNum, k] = origEntry
           | _bestRate origEntry < newRate = origEntry {_bestRate = newRate, _path = ikPath ++ kjPath}
           | otherwise = origEntry
           where
@@ -62,23 +62,14 @@ runAlgo k matrix -- k counts the number of iteration
             RateEntry kjRate _ kjPath = matrix ! k ! colNum
             newRate = ikRate * kjRate
 
--- | Find the best rate and the path to be taken for the given vertice pair.
--- And convert the information into output message.
-optimumPath :: (Vertex, Vertex) -> S.Set Vertex -> Matrix RateEntry -> [String]
-optimumPath (src, dest) set m = either (\err -> [err]) identity $ do
-  srcIdx <- maybeToEither (show src ++ " is not entered before") $ indexOfElem src set
-  destIdx <- maybeToEither (show dest ++ " is not entered before") $ indexOfElem dest set
-  let entry@RateEntry{..} = m ! srcIdx ! destIdx
-  maybeToEither "Not reachable" $ prettyShow _bestRate <$> srcToDest entry
-  where
-    srcToDest RateEntry{..} = viewR _path >>= \(_, end) -> 
-      if end == dest then Just (src : _path) else Nothing -- TODO try not to `src : _path`
-    prettyShow rate xs =
-      ("BEST_RATES_BEGIN " ++
-        _exch src ++ " " ++
-        _ccy src ++ " " ++
-        _exch dest ++ " " ++
-        _ccy dest ++ " " ++
-        show rate) :
-        (show <$> xs) ++
-        ["BEST_RATES_END"]
+-- | Return the best rate and the path to be taken 
+-- for the provided `src` and `dest` vertices if it exists
+optimum :: Vertex -> Vertex -> S.Set Vertex -> Matrix RateEntry -> Either String (Double, [Vertex])
+optimum src dest set matrix = 
+  do
+    srcIdx <- maybeToEither (show src ++ " is not entered before") $ indexOfElem src set
+    destIdx <- maybeToEither (show dest ++ " is not entered before") $ indexOfElem dest set
+    let RateEntry{..} = matrix ! srcIdx ! destIdx
+    if null _path 
+      then Left "Not reachable" 
+      else Right (_bestRate, _path)
