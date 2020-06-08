@@ -4,9 +4,11 @@
 module ExchangeRate.ProcessRequests
   ( combineRWST
   , findBestRate
+  , findBestRate'
   , updateRates )
   where
 
+import Data.Maybe (isNothing, fromJust)
 import Data.String (String)
 import Data.Time
 import Text.Parsec.String
@@ -20,7 +22,7 @@ import qualified Data.Map as M
 import Types
 import ExchangeRate.Algorithms
 import ExchangeRate.Parsers
-import ExchangeRate.Utils
+import ExchangeRate.Utils (updateMap, updateSet, setToMapVector)
 
 -- | Combine 'updateRates RWST' and 'findBestRate RWST'.  If the first 'RWST'
 -- execution fails, it will execute the second one.
@@ -61,6 +63,11 @@ findBestRate =
             footer = "BEST_RATES_END"
        in   header : path ++ [footer]
 
+-- | Parse the 2 exchange nodes from the input string
+-- get the `AppState` from the state monad, 
+-- check if there is an optimised matrix built from the `AppState` user input data,
+-- if no, run floyd-warshall for an optimised matrix, 
+-- o.w. use the matrix to find the best rate and the exchange nodes involved 
 findBestRate' 
   :: (MonadReader String m, MonadError String m, MonadState AppState m)
   => m (Double, [Vertex])
@@ -69,14 +76,14 @@ findBestRate' =
     r <- ask
     (src, dest) <- liftEither $ parseExchPair' r
     s <- get
-    let (ui@UserInput{..}, matrix) = syncMatrix s
-    put $ InSync ui matrix
-    liftEither $ optimum src dest _vertices matrix
+    let (ui@UserInput{..}, matrix, isStateChanged) = syncMatrix s
+    when isStateChanged (put $ InSync ui matrix)
+    liftEither $ optimum src dest _vertices matrix <&> (<&> (src :))
     where
       syncMatrix (OutSync ui@UserInput{..}) =
         let syncdMatrix = floydWarshall . buildMatrix _exchRates . snd . setToMapVector $ _vertices
-        in  (ui, syncdMatrix)
-      syncMatrix (InSync ui syncdMatrix) = (ui,syncdMatrix)
+        in  (ui, syncdMatrix, True)
+      syncMatrix (InSync ui syncdMatrix) = (ui,syncdMatrix, False)
 
 -- | Extract the exchange nodes, the corresponding rates and the timestamp from
 -- the input string and stores the rates to 'AppState' if the timestamp is newer.
@@ -102,6 +109,30 @@ updateRates =
         newRates = updateMap (_exchRates ui)
                    [ ((dest, src), (bkdR, time))
                    , ((src, dest), (fwdR, time)) ]
+
+updateRates'
+  :: (MonadReader String m, MonadError String m, MonadState AppState m)
+  => m [String]
+updateRates' =
+  do
+    r <- ask
+    (time, src, dest, fwdR, bkdR) <- liftEither $ parseRates' r
+    ui@UserInput{..} <- get <&> uiFromState
+    let rateOutdated = M.lookup (src, dest) _exchRates <&> \(_, origTime) -> origTime < time
+        updateRequired = isNothing rateOutdated || fromJust rateOutdated
+    when updateRequired (put $ newState time src dest fwdR bkdR ui)
+    ui' <- get <&> uiFromState
+    return $ showRates ui'
+  where
+    uiFromState (InSync ui _) = ui
+    uiFromState (OutSync ui) = ui
+    newState time src dest fwdR bkdR UserInput{..} = 
+      let newExchRates = updateMap _exchRates [((dest, src), (bkdR, time)), ((src, dest), (fwdR, time))]
+          newVertices = updateSet _vertices [src, dest]
+      in  OutSync $ UserInput newExchRates newVertices
+    showRates UserInput{..} = 
+      M.toAscList _exchRates <&> \((src, dest), (rate, time)) ->
+        show src ++ " -- " ++ show rate ++ " " ++ show time ++ " --> " ++ show dest
 
 -- | make sure the given vertice pair from the 'RWST' exist in the given
 -- 'Set Vertex'

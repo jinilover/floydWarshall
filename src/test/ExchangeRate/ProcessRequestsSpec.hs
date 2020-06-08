@@ -7,6 +7,7 @@ import Test.Hspec
 
 import Control.Monad.RWS.CPS
 import Data.List
+import Data.String (String)
 import qualified Data.Map as M
 import qualified Data.Set as S
 import qualified Data.Vector as V
@@ -93,6 +94,7 @@ updateRatesSpec =
       nub (runRWST updateRates <$> strings <*> appStates)
         `shouldBe` Right . (a, , ()) <$> appStates
 
+-- TODO to be removed
 findBestRateSpec :: Spec
 findBestRateSpec =
   describe "findBestRateSpec" $ do
@@ -111,6 +113,27 @@ findBestRateSpec =
               , "BEST_RATES_END" ]
           expected = Right (a, inSyncUi2, ()) in
       runRWST findBestRate "KRAKEN BTC KRAKEN USD" <$> [inSyncUi2, outSyncUi2] `shouldBe` replicate 2 expected
+
+findBestRateSpec' :: Spec
+findBestRateSpec' = 
+  describe "findBestRateSpec'" $ do
+    let rwst = findBestRate' :: RWST String () AppState (Either String) (Double, [Vertex])
+    it "failed due to source vertex not exists" $
+      runRWST rwst "KRAKEN STC GDAX USD" outSyncUi2
+        `shouldBe` Left "(KRAKEN, STC) is not entered before"
+    it "failed due to dest vertex not exists" $
+      runRWST rwst "KRAKEN USD GDAX STC" outSyncUi2
+        `shouldBe` Left "(GDAX, STC) is not entered before"
+    it "no matter orig AppState is InSync or OutSync, it will show the same path and return InSync" $
+      let a = (1001.0
+            , [ Vertex "KRAKEN" "BTC"
+              , Vertex "GDAX" "BTC"
+              , Vertex "GDAX" "USD"
+              , Vertex "KRAKEN" "USD" ]
+              )
+          expected = Right (a, inSyncUi2, ()) in
+      runRWST rwst "KRAKEN BTC KRAKEN USD" <$> [inSyncUi2, outSyncUi2] `shouldBe` replicate 2 expected
+
 
 outSyncUi2 :: AppState
 outSyncUi2 = OutSync ui2
@@ -140,4 +163,4 @@ emptyMatrix = V.empty -- updateRates doesn't care the matrix value
 -- expectErrorMsg _ s = assertFailure ("Expected error msg: " ++ s)
 
 specs :: [Spec]
-specs = [combineRWSTSpec, findBestRateSpec, updateRatesSpec]
+specs = [combineRWSTSpec, findBestRateSpec, findBestRateSpec', updateRatesSpec]
