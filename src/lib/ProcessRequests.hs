@@ -3,8 +3,8 @@
 
 module ProcessRequests
   ( serveReq
-  , findBestRate'
-  , updateRates' )
+  , findBestRate
+  , updateRates )
   where
 
 import Data.Maybe (isNothing, fromJust)
@@ -26,15 +26,14 @@ serveReq
 serveReq = 
   catchError updateRatesM \errs -> 
     tell mempty {_err = errs ++ ["Invalid request to update rates, probably a request for best rate"]} *> 
-      catchError findBestRateM \stillErrs -> 
-        tell mempty {_err = stillErrs}
+      catchError findBestRateM \stillErrs -> tell mempty {_err = stillErrs}
   where
-    updateRatesM = updateRates' *> get >>= \s -> 
+    updateRatesM = updateRates *> get >>= \s -> 
         let UserInput{..} = userInputFromState s
             msgs = M.toAscList _exchRates <&> \((src, dest), (rate, time)) ->
                     show src ++ " -- " ++ show rate ++ " " ++ show time ++ " --> " ++ show dest
         in  tell mempty {_res = msgs}
-    findBestRateM = findBestRate' >>= \entry -> tell mempty {_res = presentRateEntry entry}
+    findBestRateM = findBestRate >>= \entry -> tell mempty {_res = presentRateEntry entry}
     presentRateEntry RateEntry{..} = 
       let Vertex srcExch srcCcy = _start
           Vertex destExch destCcy = last _path
@@ -51,13 +50,13 @@ serveReq =
 -- check if there is an optimised matrix built from the `AppState` user input data,
 -- if no, run floyd-warshall for an optimised matrix, 
 -- o.w. use the matrix to find the best rate and the exchange nodes involved 
-findBestRate' 
+findBestRate 
   :: (MonadReader String m, MonadError [String] m, MonadState AppState m)
   => m RateEntry
-findBestRate' =
+findBestRate =
   do
     r <- ask
-    (src, dest) <- liftEither $ parseExchPair' r
+    (src, dest) <- liftEither $ parseExchPair r
     s <- get
     let (ui@UserInput{..}, matrix, isStateChanged) = syncMatrix s
     when isStateChanged (put $ InSync ui matrix)
@@ -70,13 +69,13 @@ findBestRate' =
 
 -- | Parse the exchange nodes, the corresponding rates and the timestamp from
 -- the input string and stores the rates to `AppState` if the timestamp is newer.
-updateRates'
+updateRates
   :: (MonadReader String m, MonadError [String] m, MonadState AppState m)
   => m ()
-updateRates' =
+updateRates =
   do
     r <- ask
-    (time, src, dest, fwdR, bkdR) <- liftEither $ parseRates' r
+    (time, src, dest, fwdR, bkdR) <- liftEither $ parseRates r
     ui@UserInput{..} <- get <&> userInputFromState
     let rateOutdated = M.lookup (src, dest) _exchRates <&> ((< time) . snd)
         updateRequired = isNothing rateOutdated || fromJust rateOutdated

@@ -1,9 +1,6 @@
 module Parsers
-  ( exchRatesParser
-  , exchPairParser
-  , parseErrorMsgs'
-  , parseExchPair'
-  , parseRates')
+  ( parseExchPair
+  , parseRates)
   where
 
 import Prelude hiding (option)
@@ -61,19 +58,19 @@ alphabets = many1 letter
 skipSpaces :: Parser ()
 skipSpaces = skipMany space
 
-parseErrorMsgs' :: ParseError -> [String]
-parseErrorMsgs' = map interpret . errorMessages
+parseErrorMsgs :: ParseError -> [String]
+parseErrorMsgs = map interpret . errorMessages
   where
     interpret (SysUnExpect s) = "System unexpecting: " ++ s
     interpret (UnExpect s) = "Unexpecting: " ++ s
     interpret (Expect s) = "Expecting: " ++ s
     interpret (Message s) = "General error: " ++ s
 
-parseRates' :: String -> Either [String] (UTCTime, Vertex, Vertex, Double, Double)
-parseRates' = parseOnly exchRatesParser
+parseRates :: String -> Either [String] (UTCTime, Vertex, Vertex, Double, Double)
+parseRates = parseOnly exchRatesParser
 
-parseExchPair' :: String -> Either [String] (Vertex, Vertex)
-parseExchPair' = parseOnly exchPairParser
+parseExchPair :: String -> Either [String] (Vertex, Vertex)
+parseExchPair = parseOnly exchPairParser
 
 parseOnly :: Parser a -> String -> Either [String] a
-parseOnly p = first parseErrorMsgs' . parse p "regularParse"
+parseOnly p = first parseErrorMsgs . parse p "regularParse"

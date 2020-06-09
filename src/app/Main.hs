@@ -10,9 +10,9 @@ import Types
 main :: IO ()
 main = userPrompt' $ OutSync emptyUserInput
 
--- | Prompt for user input, and pass the string to 'updateRates' to process.
+-- | Prompt for user input, and pass the string to `updateRates` to process.
 -- If it process successfully, it will display the result.  Otherwise,
--- it will pass the same string to 'findBestRate' to process and display the
+-- it will pass the same string to 'findBestRate to process and display the
 -- result.  If it still fails, it will inform the user of an invalid string.
 -- After processing, it will provide the most updated state for the next user input.
 userPrompt' :: AppState -> IO ()

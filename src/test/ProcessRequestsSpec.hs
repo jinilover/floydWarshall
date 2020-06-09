@@ -57,7 +57,7 @@ serveReqSpec =
 updateRatesSpec' :: Spec
 updateRatesSpec' = 
   describe "updateRatesSpec'" $ do
-    let rwst = updateRates' :: RWST String () AppState (Either [String]) ()
+    let rwst = updateRates :: RWST String () AppState (Either [String]) ()
     it "orig AppState has empty UserInput, success update should return OutSync with added rates" $
       let expected = Right ((), OutSync ui1, ())
       in  runRWST rwst "2017-11-01T09:42:23+00:00 KRAKEN BTC USD 1000.0 0.0009" (OutSync emptyUserInput) 
@@ -86,7 +86,7 @@ updateRatesSpec' =
 findBestRateSpec' :: Spec
 findBestRateSpec' = 
   describe "findBestRateSpec'" $ do
-    let rwst = findBestRate' :: RWST String () AppState (Either [String]) RateEntry
+    let rwst = findBestRate :: RWST String () AppState (Either [String]) RateEntry
     it "failed due to source vertex not exists" $
       runRWST rwst "KRAKEN STC GDAX USD" outSyncUi2
         `shouldBe` Left ["(KRAKEN, STC) is not entered before"]
