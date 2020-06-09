@@ -113,7 +113,7 @@ updateRates =
 
 updateRates'
   :: (MonadReader String m, MonadError String m, MonadState AppState m)
-  => m [String]
+  => m ()
 updateRates' =
   do
     r <- ask
@@ -122,8 +122,6 @@ updateRates' =
     let rateOutdated = M.lookup (src, dest) _exchRates <&> ((< time) . snd)
         updateRequired = isNothing rateOutdated || fromJust rateOutdated
     when updateRequired (put $ newState time src dest fwdR bkdR ui)
-    ui' <- get <&> uiFromState
-    return $ showRates ui'
   where
     uiFromState (InSync ui _) = ui
     uiFromState (OutSync ui) = ui
@@ -131,9 +129,6 @@ updateRates' =
       let newExchRates = updateMap _exchRates [((dest, src), (bkdR, time)), ((src, dest), (fwdR, time))]
           newVertices = updateSet _vertices [src, dest]
       in  OutSync $ UserInput newExchRates newVertices
-    showRates UserInput{..} = 
-      M.toAscList _exchRates <&> \((src, dest), (rate, time)) ->
-        show src ++ " -- " ++ show rate ++ " " ++ show time ++ " --> " ++ show dest
 
 -- | make sure the given vertice pair from the 'RWST' exist in the given
 -- 'Set Vertex'
