@@ -50,24 +50,19 @@ type ExchRates = M.Map (Vertex, Vertex) (Double, UTCTime)
 
 data DisplayMessage =
   DisplayMessage {
-    _findBestRateErr :: [String]
-  , _updateRatesErr :: [String]
-  , _findBestRateRes :: [String]
-  , _updateRatesRes :: [String]
+    _err :: [String]
+  , _res :: [String]
   }
 
 instance Semigroup DisplayMessage where
-  (DisplayMessage findErr1 updateErr1 findRes1 updateRes1) <> 
-    (DisplayMessage findErr2 updateErr2 findRes2 updateRes2) = 
+  (DisplayMessage err1 res1) <> (DisplayMessage err2 res2) = 
     DisplayMessage {
-      _findBestRateErr = findErr1 <> findErr2
-    , _updateRatesErr = updateErr1 <> updateErr2
-    , _findBestRateRes = findRes1 <> findRes2
-    , _updateRatesRes = updateRes1 <> updateRes2
+      _err = err1 <> err2
+    , _res = res1 <> res2
     }
 
 instance Semigroup DisplayMessage => Monoid DisplayMessage where
-  mempty = DisplayMessage [] [] [] []
+  mempty = DisplayMessage [] []
 
 emptyUserInput :: UserInput
 emptyUserInput = UserInput M.empty S.empty

@@ -3,6 +3,7 @@
 
 module ExchangeRate.ProcessRequests
   ( combineRWST
+  , serveReq
   , findBestRate
   , findBestRate'
   , updateRates
@@ -39,12 +40,16 @@ combineRWST = executeRWST updateRates >>= nextRwst
                      >> executeRWST findBestRate
     nextRwst _ = return True
 
-serveRequest
-  :: (MonadReader String m, MonadError [String] m, MonadState AppState m, MonadWriter w m)
+serveReq
+  :: (MonadReader String m, MonadError [String] m, MonadState AppState m, MonadWriter DisplayMessage m)
   => m ()
-serveRequest = 
-  void $ findBestRate' <&> presentRateEntry
+serveReq = 
+  catchError updateRatesM \errs -> 
+    tell mempty {_err = errs ++ ["Invalid request to update rates, probably a request for best rate"]} *> 
+      catchError findBestRateM \stillErrs -> 
+        tell mempty {_err = stillErrs}
   where
+    findBestRateM = findBestRate' >>= \entry -> tell mempty {_res = presentRateEntry entry}
     presentRateEntry RateEntry{..} = 
       let Vertex srcExch srcCcy = _start
           Vertex destExch destCcy = last _path
@@ -55,6 +60,11 @@ serveRequest =
           path = show <$> _start : _path
           footer = "BEST_RATES_END"
       in  header : path ++ [footer]
+    updateRatesM = updateRates' *> get >>= \s -> 
+        let UserInput{..} = userInputFromState s
+            msgs = M.toAscList _exchRates <&> \((src, dest), (rate, time)) ->
+                    show src ++ " -- " ++ show rate ++ " " ++ show time ++ " --> " ++ show dest
+        in  tell mempty {_res = msgs}
 
 -- TODO remove
 -- | Find the best rate and the trades involved for the given exchange nodes
@@ -142,17 +152,19 @@ updateRates' =
   do
     r <- ask
     (time, src, dest, fwdR, bkdR) <- liftEither $ parseRates' r
-    ui@UserInput{..} <- get <&> uiFromState
+    ui@UserInput{..} <- get <&> userInputFromState
     let rateOutdated = M.lookup (src, dest) _exchRates <&> ((< time) . snd)
         updateRequired = isNothing rateOutdated || fromJust rateOutdated
     when updateRequired (put $ newState time src dest fwdR bkdR ui)
   where
-    uiFromState (InSync ui _) = ui
-    uiFromState (OutSync ui) = ui
     newState time src dest fwdR bkdR UserInput{..} = 
       let newExchRates = updateMap _exchRates [((dest, src), (bkdR, time)), ((src, dest), (fwdR, time))]
           newVertices = updateSet _vertices [src, dest]
       in  OutSync $ UserInput newExchRates newVertices
+
+userInputFromState :: AppState -> UserInput
+userInputFromState (InSync ui _) = ui
+userInputFromState (OutSync ui) = ui
 
 -- | make sure the given vertice pair from the 'RWST' exist in the given
 -- 'Set Vertex'
