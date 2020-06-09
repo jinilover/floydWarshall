@@ -82,19 +82,19 @@ parseErrorMsgs = map interpret . errorMessages
     interpret (Expect s) = "Expecting: " ++ s
     interpret (Message s) = "General error: " ++ s
 
-parseErrorMsgs' :: ParseError -> String
-parseErrorMsgs' = intercalate ", " . map interpret . errorMessages
+parseErrorMsgs' :: ParseError -> [String]
+parseErrorMsgs' = map interpret . errorMessages
   where
     interpret (SysUnExpect s) = "System unexpecting: " ++ s
     interpret (UnExpect s) = "Unexpecting: " ++ s
     interpret (Expect s) = "Expecting: " ++ s
     interpret (Message s) = "General error: " ++ s
 
-parseRates' :: String -> Either String (UTCTime, Vertex, Vertex, Double, Double)
+parseRates' :: String -> Either [String] (UTCTime, Vertex, Vertex, Double, Double)
 parseRates' = parseOnly exchRatesParser
 
-parseExchPair' :: String -> Either String  (Vertex, Vertex)
+parseExchPair' :: String -> Either [String] (Vertex, Vertex)
 parseExchPair' = parseOnly exchPairParser
 
-parseOnly :: Parser a -> String -> Either String a
+parseOnly :: Parser a -> String -> Either [String] a
 parseOnly p = first parseErrorMsgs' . parse p "regularParse"

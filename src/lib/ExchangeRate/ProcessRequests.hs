@@ -1,5 +1,5 @@
-{-# LANGUAGE TupleSections
-           , FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TupleSections #-}
 
 module ExchangeRate.ProcessRequests
   ( combineRWST
@@ -14,7 +14,6 @@ import Data.List (last)
 import Data.String (String)
 import Data.Time
 import Text.Parsec.String
-import Control.Arrow
 import Control.Monad.RWS.CPS
 import Control.Monad.Except (liftEither)
 
@@ -41,7 +40,7 @@ combineRWST = executeRWST updateRates >>= nextRwst
     nextRwst _ = return True
 
 serveRequest
-  :: (MonadReader String m, MonadError String m, MonadState AppState m, MonadWriter w m)
+  :: (MonadReader String m, MonadError [String] m, MonadState AppState m, MonadWriter w m)
   => m ()
 serveRequest = 
   void $ findBestRate' <&> presentRateEntry
@@ -92,7 +91,7 @@ findBestRate =
 -- if no, run floyd-warshall for an optimised matrix, 
 -- o.w. use the matrix to find the best rate and the exchange nodes involved 
 findBestRate' 
-  :: (MonadReader String m, MonadError String m, MonadState AppState m)
+  :: (MonadReader String m, MonadError [String] m, MonadState AppState m)
   => m RateEntry
 findBestRate' =
   do
@@ -101,7 +100,7 @@ findBestRate' =
     s <- get
     let (ui@UserInput{..}, matrix, isStateChanged) = syncMatrix s
     when isStateChanged (put $ InSync ui matrix)
-    liftEither $ optimum src dest (setToVector _vertices) matrix
+    liftEither . first return $ optimum src dest (setToVector _vertices) matrix 
     where
       syncMatrix (OutSync ui@UserInput{..}) =
         let syncdMatrix = floydWarshall . buildMatrix _exchRates . setToVector $ _vertices
@@ -137,7 +136,7 @@ updateRates =
 -- | Parse the exchange nodes, the corresponding rates and the timestamp from
 -- the input string and stores the rates to `AppState` if the timestamp is newer.
 updateRates'
-  :: (MonadReader String m, MonadError String m, MonadState AppState m)
+  :: (MonadReader String m, MonadError [String] m, MonadState AppState m)
   => m ()
 updateRates' =
   do
@@ -176,5 +175,5 @@ parseRates :: RWST String () AppState (Either [String]) (UTCTime, Vertex, Vertex
 parseRates = genericParse exchRatesParser
 
 genericParse :: Parser a -> RWST String () AppState (Either [String]) a
-genericParse p = rwsT (\r s -> fmap (, s, ()) . left parseErrorMsgs $ simpleParse p r)
+genericParse p = rwsT (\r s -> fmap (, s, ()) . first parseErrorMsgs $ simpleParse p r)
 

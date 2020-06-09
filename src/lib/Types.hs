@@ -1,3 +1,6 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE UndecidableInstances #-}
+
 module Types where
 
 import Data.Time
@@ -52,6 +55,19 @@ data DisplayMessage =
   , _findBestRateRes :: [String]
   , _updateRatesRes :: [String]
   }
+
+instance Semigroup DisplayMessage where
+  (DisplayMessage findErr1 updateErr1 findRes1 updateRes1) <> 
+    (DisplayMessage findErr2 updateErr2 findRes2 updateRes2) = 
+    DisplayMessage {
+      _findBestRateErr = findErr1 <> findErr2
+    , _updateRatesErr = updateErr1 <> updateErr2
+    , _findBestRateRes = findRes1 <> findRes2
+    , _updateRatesRes = updateRes1 <> updateRes2
+    }
+
+instance Semigroup DisplayMessage => Monoid DisplayMessage where
+  mempty = DisplayMessage [] [] [] []
 
 emptyUserInput :: UserInput
 emptyUserInput = UserInput M.empty S.empty

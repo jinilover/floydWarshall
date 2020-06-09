@@ -98,7 +98,7 @@ updateRatesSpec =
 updateRatesSpec' :: Spec
 updateRatesSpec' = 
   describe "updateRatesSpec'" $ do
-    let rwst = updateRates' :: RWST String () AppState (Either String) ()
+    let rwst = updateRates' :: RWST String () AppState (Either [String]) ()
     it "orig AppState has empty UserInput, success update should return OutSync with added rates" $
       let expected = Right ((), OutSync ui1, ())
       in  runRWST rwst "2017-11-01T09:42:23+00:00 KRAKEN BTC USD 1000.0 0.0009" (OutSync emptyUserInput) 
@@ -148,13 +148,13 @@ findBestRateSpec =
 findBestRateSpec' :: Spec
 findBestRateSpec' = 
   describe "findBestRateSpec'" $ do
-    let rwst = findBestRate' :: RWST String () AppState (Either String) RateEntry
+    let rwst = findBestRate' :: RWST String () AppState (Either [String]) RateEntry
     it "failed due to source vertex not exists" $
       runRWST rwst "KRAKEN STC GDAX USD" outSyncUi2
-        `shouldBe` Left "(KRAKEN, STC) is not entered before"
+        `shouldBe` Left ["(KRAKEN, STC) is not entered before"]
     it "failed due to dest vertex not exists" $
       runRWST rwst "KRAKEN USD GDAX STC" outSyncUi2
-        `shouldBe` Left "(GDAX, STC) is not entered before"
+        `shouldBe` Left ["(GDAX, STC) is not entered before"]
     it "no matter orig AppState is InSync or OutSync, it will show the same path and return InSync" $
       let _bestRate = 1001.0
           _start = kraken_btc
