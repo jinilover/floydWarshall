@@ -1,8 +1,7 @@
 module Parsers
   ( exchRatesParser
   , exchPairParser
-  , simpleParse
-  , parseErrorMsgs
+  , parseErrorMsgs'
   , parseExchPair'
   , parseRates')
   where
@@ -56,24 +55,11 @@ exchPairParser = do
   when (src == dest) $ parserFail "source must be different from destination"
   return pair
 
--- TODO to be removed
-simpleParse :: Parser a -> String -> Either ParseError a
-simpleParse = flip parse "regularParse"
-
 alphabets :: Parser String
 alphabets = many1 letter
 
 skipSpaces :: Parser ()
 skipSpaces = skipMany space
-
--- TODO to be removed
-parseErrorMsgs :: ParseError -> [String]
-parseErrorMsgs = map interpret . errorMessages
-  where
-    interpret (SysUnExpect s) = "System unexpecting: " ++ s
-    interpret (UnExpect s) = "Unexpecting: " ++ s
-    interpret (Expect s) = "Expecting: " ++ s
-    interpret (Message s) = "General error: " ++ s
 
 parseErrorMsgs' :: ParseError -> [String]
 parseErrorMsgs' = map interpret . errorMessages

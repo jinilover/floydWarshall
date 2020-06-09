@@ -10,23 +10,11 @@ import Types
 main :: IO ()
 main = userPrompt' $ OutSync emptyUserInput
 
--- TODO remove
 -- | Prompt for user input, and pass the string to 'updateRates' to process.
 -- If it process successfully, it will display the result.  Otherwise,
 -- it will pass the same string to 'findBestRate' to process and display the
 -- result.  If it still fails, it will inform the user of an invalid string.
--- After processing, it will update its state and wait for next user input.
-userPrompt :: AppState -> IO ()
-userPrompt s =
-  do r <- getLine
-     (a, newS, w) <- runRWST combineRWST (toS r) s
-     traverse_ putStrLn w
-     when (not a) $ putStrLn errMsg
-     userPrompt newS
-  where
-    errMsg :: String
-    errMsg = "You neither enter exchange rates or request best rate, please enter a valid input"
-
+-- After processing, it will provide the most updated state for the next user input.
 userPrompt' :: AppState -> IO ()
 userPrompt' s = 
   do
