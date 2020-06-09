@@ -49,6 +49,11 @@ serveReq =
       catchError findBestRateM \stillErrs -> 
         tell mempty {_err = stillErrs}
   where
+    updateRatesM = updateRates' *> get >>= \s -> 
+        let UserInput{..} = userInputFromState s
+            msgs = M.toAscList _exchRates <&> \((src, dest), (rate, time)) ->
+                    show src ++ " -- " ++ show rate ++ " " ++ show time ++ " --> " ++ show dest
+        in  tell mempty {_res = msgs}
     findBestRateM = findBestRate' >>= \entry -> tell mempty {_res = presentRateEntry entry}
     presentRateEntry RateEntry{..} = 
       let Vertex srcExch srcCcy = _start
@@ -60,11 +65,6 @@ serveReq =
           path = show <$> _start : _path
           footer = "BEST_RATES_END"
       in  header : path ++ [footer]
-    updateRatesM = updateRates' *> get >>= \s -> 
-        let UserInput{..} = userInputFromState s
-            msgs = M.toAscList _exchRates <&> \((src, dest), (rate, time)) ->
-                    show src ++ " -- " ++ show rate ++ " " ++ show time ++ " --> " ++ show dest
-        in  tell mempty {_res = msgs}
 
 -- TODO remove
 -- | Find the best rate and the trades involved for the given exchange nodes

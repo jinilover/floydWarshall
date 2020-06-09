@@ -52,7 +52,7 @@ data DisplayMessage =
   DisplayMessage {
     _err :: [String]
   , _res :: [String]
-  }
+  } deriving (Show, Eq)
 
 instance Semigroup DisplayMessage where
   (DisplayMessage err1 res1) <> (DisplayMessage err2 res2) = 

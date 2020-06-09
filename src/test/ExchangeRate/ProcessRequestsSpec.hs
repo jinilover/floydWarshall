@@ -53,6 +53,42 @@ combineRWSTSpec =
         (runRWST combineRWST "2017-11-0109:42:23+00:00 KRAKEN BTC USD 1000.0 0.0009")
         appStates >>= (`shouldBe` (False, , w) <$> appStates)
 
+serveReqSpec :: Spec
+serveReqSpec = 
+  describe "serveReqSpec" $ do
+    let rwst = serveReq :: RWST String DisplayMessage AppState (Either [String]) ()
+    it "run valid updateRates, it shouldn't proceed to findBestRate" $
+      let res = [ "(KRAKEN, BTC) -- 1000.0 2017-11-01 09:42:23 UTC --> (KRAKEN, USD)"
+                , "(KRAKEN, USD) -- 9.0e-4 2017-11-01 09:42:23 UTC --> (KRAKEN, BTC)" ]
+          expected = Right ((), OutSync ui1, mempty {_res = res})
+      in  runRWST rwst "2017-11-01T09:42:23+00:00 KRAKEN BTC USD 1000.0 0.0009" 
+            (OutSync emptyUserInput) `shouldBe` expected
+    it "invalid updateRates, it should proceed to findBestRate" $
+      let err = [ "System unexpecting: \" \""
+                , "General error: Invalid timestamp: KRAKEN"
+                , "Invalid request to update rates, probably a request for best rate" ]
+          res = [ "BEST_RATES_BEGIN KRAKEN BTC KRAKEN USD 1001.0"
+                , "(KRAKEN, BTC)"
+                , "(GDAX, BTC)"
+                , "(GDAX, USD)"
+                , "(KRAKEN, USD)"
+                , "BEST_RATES_END" ]
+          expected = Right ((), inSyncUi2, mempty {_err = err, _res = res})
+      in  runRWST rwst "KRAKEN BTC KRAKEN USD" outSyncUi2 
+            `shouldBe` expected
+    it "both updateRates and findBestRate are invalid, it should display all eror message" $
+      let err = [ "System unexpecting: \" \""
+                , "General error: Invalid timestamp: 2017-11-0109:42:23+00:00"
+                , "Invalid request to update rates, probably a request for best rate"
+                , "System unexpecting: \"2\""
+                , "System unexpecting: \"2\""
+                , "Expecting: space"
+                , "Expecting: letter" ]
+          appStates = [inSyncUi2, outSyncUi2] 
+          expected = Right $ appStates <&> ((), , mempty {_err = err})
+      in  traverse (runRWST rwst "2017-11-0109:42:23+00:00 KRAKEN BTC USD 1000.0 0.0009") appStates
+            `shouldBe` expected
+            
 -- TODO to be removed
 updateRatesSpec :: Spec
 updateRatesSpec =
@@ -187,9 +223,5 @@ ui2 = ui1 { _exchRates = updateMap (_exchRates ui1) [gdax_btc_usd, gdax_usd_btc]
 emptyMatrix :: Matrix RateEntry
 emptyMatrix = V.empty -- updateRates doesn't care the matrix value
 
--- expectErrorMsg :: Either [String] a -> String -> Expectation
--- expectErrorMsg (Left msgs) s = msgs `shouldSatisfy` elem s
--- expectErrorMsg _ s = assertFailure ("Expected error msg: " ++ s)
-
 specs :: [Spec]
-specs = [combineRWSTSpec, findBestRateSpec, findBestRateSpec', updateRatesSpec, updateRatesSpec']
+specs = [combineRWSTSpec, serveReqSpec, findBestRateSpec, findBestRateSpec', updateRatesSpec, updateRatesSpec']
