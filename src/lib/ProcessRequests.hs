@@ -20,6 +20,11 @@ import Algorithms (floydWarshall, buildMatrix, optimum)
 import Parsers (parseRates, parseExchPair)
 import Utils (updateMap, updateSet, setToVector)
 
+-- | It doesn't know which request the user is asking for,
+-- therefore it call `updateRates` first, if it encounters error, 
+-- it will call `findBestRate`, if it still encounters error
+-- it will write all the error using `MonadWriter DisplayMessage` and ask the user to raise a valid request
+-- o.w. it will the success message using `MonadWriter DisplayMessage`.
 serveReq
   :: (MonadReader String m, MonadError [String] m, MonadState AppState m, MonadWriter DisplayMessage m)
   => m ()

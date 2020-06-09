@@ -46,8 +46,8 @@ type Matrix a = V.Vector (V.Vector a)
 
 type ExchRates = M.Map (Vertex, Vertex) (Double, UTCTime)
 
--- type Rwst a = RWST String () AppState (Either [String]) a
-
+-- | Used by the MonadWriter
+-- therefore it's a monoid
 data DisplayMessage =
   DisplayMessage {
     _err :: [String]
