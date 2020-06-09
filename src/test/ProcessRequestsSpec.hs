@@ -1,5 +1,5 @@
 {-# LANGUAGE TupleSections #-}
-module ExchangeRate.ProcessRequestsSpec
+module ProcessRequestsSpec
   (specs)
   where
 
@@ -13,10 +13,10 @@ import qualified Data.Set as S
 import qualified Data.Vector as V
 
 import Types
-import ExchangeRate.Utils
-import ExchangeRate.ProcessRequests
-import ExchangeRate.MockData
-import ExchangeRate.TestUtils (buildRateMatrix)
+import Utils
+import ProcessRequests
+import MockData
+import TestUtils (buildRateMatrix)
 
 combineRWSTSpec :: Spec
 combineRWSTSpec =

@@ -1,4 +1,4 @@
-module ExchangeRate.Utils
+module Utils
   where
 
 import Data.Vector as V hiding (length, zip, foldl, (++))
@@ -10,7 +10,6 @@ import Types
 -- | Convert a `Vertex` set to a Vertice vector and a map of the `Vertex` to
 -- its index in the `Vector`.  `Vector` is better performed in indexing an
 -- element.
--- TODO reconsider the return type
 setToVector :: S.Set Vertex -> V.Vector Vertex
 setToVector = V.fromList . S.toAscList
 

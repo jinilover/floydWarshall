@@ -1,9 +1,9 @@
 import Test.Hspec
 
-import qualified ExchangeRate.UtilsSpec as Utils
-import qualified ExchangeRate.ParsersSpec as Parsers
-import qualified ExchangeRate.AlgorithmsSpec as Algorithms
-import qualified ExchangeRate.ProcessRequestsSpec as ProcessRequests
+import qualified UtilsSpec as Utils
+import qualified ParsersSpec as Parsers
+import qualified AlgorithmsSpec as Algorithms
+import qualified ProcessRequestsSpec as ProcessRequests
 
 main :: IO ()
 main = hspec $ foldl (>>) (return ()) specs

@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TupleSections #-}
 
-module ExchangeRate.ProcessRequests
+module ProcessRequests
   ( combineRWST
   , serveReq
   , findBestRate
@@ -22,9 +22,9 @@ import qualified Data.Set as S
 import qualified Data.Map as M
 
 import Types
-import ExchangeRate.Algorithms
-import ExchangeRate.Parsers
-import ExchangeRate.Utils (updateMap, updateSet, setToVector)
+import Algorithms
+import Parsers
+import Utils (updateMap, updateSet, setToVector)
 
 -- TODO remove
 -- | Combine 'updateRates RWST' and 'findBestRate RWST'.  If the first 'RWST'

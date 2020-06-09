@@ -1,4 +1,4 @@
-module ExchangeRate.ParsersSpec
+module ParsersSpec
   (specs)
   where
 
@@ -9,9 +9,9 @@ import Data.String (String)
 import Data.Time.Clock.POSIX
 import Text.Parsec.Error
 
-import ExchangeRate.Parsers
+import Parsers
 
-import ExchangeRate.MockData
+import MockData
 
 exchRatesParserSpec :: Spec
 exchRatesParserSpec =

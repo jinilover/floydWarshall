@@ -1,4 +1,4 @@
-module ExchangeRate.UtilsSpec
+module UtilsSpec
   (specs) where
 
 import Test.Hspec
@@ -6,9 +6,9 @@ import Test.Hspec
 import qualified Data.Set as S
 import qualified Data.Vector as V
 
-import ExchangeRate.Utils
+import Utils
 
-import ExchangeRate.MockData
+import MockData
 
 setToVectorSpec :: Spec
 setToVectorSpec =

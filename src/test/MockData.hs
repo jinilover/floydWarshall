@@ -1,4 +1,4 @@
-module ExchangeRate.MockData
+module MockData
   where
 
 import Data.Time.Clock.POSIX
@@ -6,7 +6,7 @@ import qualified Data.Vector as V
 
 import Types
 
-import ExchangeRate.TestUtils (buildRateMatrix)
+import TestUtils (buildRateMatrix)
 
 [ gdax_btc, gdax_usd, kraken_btc, kraken_usd, kraken_stc, 
   bittrex_btc, bittrex_usd, bittrex_stc] = 

@@ -28,10 +28,10 @@ library
   hs-source-dirs:       src/lib
   exposed-modules:      Prelude
                       , Types
-                      , ExchangeRate.Algorithms
-                      , ExchangeRate.Parsers
-                      , ExchangeRate.ProcessRequests
-                      , ExchangeRate.Utils
+                      , Algorithms
+                      , Parsers
+                      , ProcessRequests
+                      , Utils
   ghc-options:          -Wall -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints
   default-language:     Haskell2010
   
@@ -57,12 +57,12 @@ test-suite tests
   type:               exitcode-stdio-1.0
   main-is:            Spec.hs
   hs-source-dirs:     src/test
-  other-modules:      ExchangeRate.AlgorithmsSpec
-                    , ExchangeRate.MockData
-                    , ExchangeRate.ParsersSpec
-                    , ExchangeRate.ProcessRequestsSpec
-                    , ExchangeRate.TestUtils
-                    , ExchangeRate.UtilsSpec
+  other-modules:      AlgorithmsSpec
+                    , MockData
+                    , ParsersSpec
+                    , ProcessRequestsSpec
+                    , TestUtils
+                    , UtilsSpec
   default-language:   Haskell2010
   ghc-options:        -Wall -threaded
 

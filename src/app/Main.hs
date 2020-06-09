@@ -4,8 +4,8 @@ module Main
 import Control.Monad.RWS.CPS
 import Data.String (String)
 
+import ProcessRequests
 import Types
-import ExchangeRate.ProcessRequests
 
 main :: IO ()
 main = userPrompt' $ OutSync emptyUserInput

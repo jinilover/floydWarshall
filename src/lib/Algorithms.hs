@@ -1,4 +1,4 @@
-module ExchangeRate.Algorithms
+module Algorithms
   ( buildMatrix
   , floydWarshall
   , optimum
@@ -12,7 +12,7 @@ import Data.Vector as V hiding ((++), any, null)
 import qualified Data.Map as M
 
 import Types
-import ExchangeRate.Utils (isolatedEntry)
+import Utils (isolatedEntry)
 
 -- | Build a matrix of n*n size where n is the size of the `Vertex` vector
 -- Each entry is filled with the rate between the Vertex if there is any

@@ -1,4 +1,4 @@
-module ExchangeRate.Parsers
+module Parsers
   ( exchRatesParser
   , exchPairParser
   , simpleParse
@@ -13,17 +13,10 @@ import Text.Read
 import Text.Parsec
 import Text.Parsec.String
 import Text.Parsec.Error
--- import Control.Monad
--- import Control.Arrow
 import Data.Char
 import Data.Time hiding (parseTime)
--- import Data.Either.Utils
-
--- import qualified Data.Map as M
--- import qualified Data.Set as S
 
 import Types
--- import ExchangeRate.Utils
 
 -- | Parse the string for updating exchange rates.  It extracts timestamp,
 -- exchange, source currency, destination currency, forward rate and backward

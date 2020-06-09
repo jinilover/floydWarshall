@@ -1,4 +1,4 @@
-module ExchangeRate.TestUtils
+module TestUtils
   where
 
 import Data.Vector as V

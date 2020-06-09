@@ -1,4 +1,4 @@
-module ExchangeRate.AlgorithmsSpec
+module AlgorithmsSpec
   (specs)
   where
 
@@ -11,11 +11,11 @@ import qualified Data.Set as S
 import Data.Vector as V
 
 import Types
-import ExchangeRate.Algorithms
-import ExchangeRate.Utils (setToVector)
+import Algorithms
+import Utils (setToVector)
 
-import ExchangeRate.MockData
-import ExchangeRate.TestUtils (listsToMatrix, buildRateMatrix)
+import MockData
+import TestUtils (listsToMatrix, buildRateMatrix)
 
 buildMatrixSpec :: Spec
 buildMatrixSpec =
