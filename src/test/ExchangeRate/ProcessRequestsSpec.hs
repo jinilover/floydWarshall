@@ -142,12 +142,13 @@ findBestRateSpec =
               , "(KRAKEN, USD)"
               , "BEST_RATES_END" ]
           expected = Right (a, inSyncUi2, ()) in
-      runRWST findBestRate "KRAKEN BTC KRAKEN USD" <$> [inSyncUi2, outSyncUi2] `shouldBe` replicate 2 expected
+      runRWST findBestRate "KRAKEN BTC KRAKEN USD" <$> [inSyncUi2, outSyncUi2] 
+        `shouldBe` replicate 2 expected
 
 findBestRateSpec' :: Spec
 findBestRateSpec' = 
   describe "findBestRateSpec'" $ do
-    let rwst = findBestRate' :: RWST String () AppState (Either String) (Double, [Vertex])
+    let rwst = findBestRate' :: RWST String () AppState (Either String) RateEntry
     it "failed due to source vertex not exists" $
       runRWST rwst "KRAKEN STC GDAX USD" outSyncUi2
         `shouldBe` Left "(KRAKEN, STC) is not entered before"
@@ -155,14 +156,12 @@ findBestRateSpec' =
       runRWST rwst "KRAKEN USD GDAX STC" outSyncUi2
         `shouldBe` Left "(GDAX, STC) is not entered before"
     it "no matter orig AppState is InSync or OutSync, it will show the same path and return InSync" $
-      let a = (1001.0
-            , [ Vertex "KRAKEN" "BTC"
-              , Vertex "GDAX" "BTC"
-              , Vertex "GDAX" "USD"
-              , Vertex "KRAKEN" "USD" ]
-              )
-          expected = Right (a, inSyncUi2, ()) in
-      runRWST rwst "KRAKEN BTC KRAKEN USD" <$> [inSyncUi2, outSyncUi2] `shouldBe` replicate 2 expected
+      let _bestRate = 1001.0
+          _start = kraken_btc
+          _path = [gdax_btc, gdax_usd, kraken_usd]
+          expected = Right (RateEntry{..}, inSyncUi2, ()) 
+      in  runRWST rwst "KRAKEN BTC KRAKEN USD" <$> [inSyncUi2, outSyncUi2] 
+            `shouldBe` replicate 2 expected
 
 
 outSyncUi2 :: AppState

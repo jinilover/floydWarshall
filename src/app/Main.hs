@@ -1,16 +1,9 @@
 module Main
   (main) where
 
--- import Protolude hiding (putStrLn, getLine)
--- import Prelude (String, putStrLn, getLine)
 import Control.Monad.RWS.CPS
 import Data.String (String)
 
--- import qualified Data.Map as M
-
--- import ExchangeRate.Utils
--- import ExchangeRate.Parsers
--- import ExchangeRate.Algorithms
 import Types
 import ExchangeRate.ProcessRequests
 

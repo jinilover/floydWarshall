@@ -10,6 +10,7 @@ module ExchangeRate.ProcessRequests
   where
 
 import Data.Maybe (isNothing, fromJust)
+import Data.List (last)
 import Data.String (String)
 import Data.Time
 import Text.Parsec.String
@@ -25,6 +26,7 @@ import ExchangeRate.Algorithms
 import ExchangeRate.Parsers
 import ExchangeRate.Utils (updateMap, updateSet, setToVector)
 
+-- TODO remove
 -- | Combine 'updateRates RWST' and 'findBestRate RWST'.  If the first 'RWST'
 -- execution fails, it will execute the second one.
 combineRWST :: RWST String [String] AppState IO Bool
@@ -38,6 +40,24 @@ combineRWST = executeRWST updateRates >>= nextRwst
                      >> executeRWST findBestRate
     nextRwst _ = return True
 
+serveRequest
+  :: (MonadReader String m, MonadError String m, MonadState AppState m, MonadWriter w m)
+  => m ()
+serveRequest = 
+  void $ findBestRate' <&> presentRateEntry
+  where
+    presentRateEntry RateEntry{..} = 
+      let Vertex srcExch srcCcy = _start
+          Vertex destExch destCcy = last _path
+          header = "BEST_RATES_BEGIN " ++ 
+                    srcExch ++ " " ++ srcCcy ++ " " ++ 
+                    destExch ++ " " ++ destCcy ++ " " ++ 
+                    show _bestRate
+          path = show <$> _start : _path
+          footer = "BEST_RATES_END"
+      in  header : path ++ [footer]
+
+-- TODO remove
 -- | Find the best rate and the trades involved for the given exchange nodes
 -- (provided by the input string) from the 'AppState' containing
 -- the exchange rates between exchange nodes.  It uses floyd-warshall algo
@@ -48,19 +68,21 @@ findBestRate =
      let (ui@UserInput{..}, m) = syncMatrix s
      put $ InSync ui m
      (src, dest) <- validateExchPair _vertices parseExchPair
-     return . present src dest $ optimum src dest (setToVector _vertices) m
+     return . present $ optimum src dest (setToVector _vertices) m
    where
      syncMatrix (OutSync ui@UserInput{..}) =
        let  syncdMatrix = floydWarshall . buildMatrix _exchRates . setToVector $ _vertices
        in   (ui, syncdMatrix)
      syncMatrix (InSync ui syncdMatrix) = (ui,syncdMatrix)
-     present _ _ (Left err) = [err]
-     present src@(Vertex srcExch srcCcy) (Vertex destExch destCcy) (Right (rate, vertices)) = 
-       let  header = "BEST_RATES_BEGIN " ++ 
+     present (Left err) = [err]
+     present (Right RateEntry{..}) = 
+       let  Vertex srcExch srcCcy = _start
+            Vertex destExch destCcy = last _path
+            header = "BEST_RATES_BEGIN " ++ 
                       srcExch ++ " " ++ srcCcy ++ " " ++ 
                       destExch ++ " " ++ destCcy ++ " " ++ 
-                      show rate
-            path = show <$> src : vertices       
+                      show _bestRate
+            path = show <$> _start : _path
             footer = "BEST_RATES_END"
        in   header : path ++ [footer]
 
@@ -71,7 +93,7 @@ findBestRate =
 -- o.w. use the matrix to find the best rate and the exchange nodes involved 
 findBestRate' 
   :: (MonadReader String m, MonadError String m, MonadState AppState m)
-  => m (Double, [Vertex])
+  => m RateEntry
 findBestRate' =
   do
     r <- ask
@@ -79,13 +101,14 @@ findBestRate' =
     s <- get
     let (ui@UserInput{..}, matrix, isStateChanged) = syncMatrix s
     when isStateChanged (put $ InSync ui matrix)
-    liftEither $ optimum src dest (setToVector _vertices) matrix <&> (<&> (src :))
+    liftEither $ optimum src dest (setToVector _vertices) matrix
     where
       syncMatrix (OutSync ui@UserInput{..}) =
         let syncdMatrix = floydWarshall . buildMatrix _exchRates . setToVector $ _vertices
         in  (ui, syncdMatrix, True)
       syncMatrix (InSync ui syncdMatrix) = (ui,syncdMatrix, False)
 
+-- TODO remove
 -- | Extract the exchange nodes, the corresponding rates and the timestamp from
 -- the input string and stores the rates to 'AppState' if the timestamp is newer.
 updateRates :: RWST String () AppState (Either [String])  [String]
@@ -111,6 +134,8 @@ updateRates =
                    [ ((dest, src), (bkdR, time))
                    , ((src, dest), (fwdR, time)) ]
 
+-- | Parse the exchange nodes, the corresponding rates and the timestamp from
+-- the input string and stores the rates to `AppState` if the timestamp is newer.
 updateRates'
   :: (MonadReader String m, MonadError String m, MonadState AppState m)
   => m ()
@@ -133,7 +158,7 @@ updateRates' =
 -- | make sure the given vertice pair from the 'RWST' exist in the given
 -- 'Set Vertex'
 -- TODO S.Set Vertex comes from the state, it is not needed
--- this validation is not needed because `optimum` call will check it
+-- Also, this validation is not needed because `optimum` call will check it
 validateExchPair :: S.Set Vertex ->
                     RWST String () AppState (Either [String]) (Vertex, Vertex) ->
                     RWST String () AppState (Either [String]) (Vertex, Vertex)

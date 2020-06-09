@@ -45,8 +45,13 @@ type ExchRates = M.Map (Vertex, Vertex) (Double, UTCTime)
 
 -- type Rwst a = RWST String () AppState (Either [String]) a
 
+data DisplayMessage =
+  DisplayMessage {
+    _findBestRateErr :: [String]
+  , _updateRatesErr :: [String]
+  , _findBestRateRes :: [String]
+  , _updateRatesRes :: [String]
+  }
+
 emptyUserInput :: UserInput
-emptyUserInput = 
-  let _exchRates = M.empty
-      _vertices = S.empty
-  in  UserInput{..}
+emptyUserInput = UserInput M.empty S.empty

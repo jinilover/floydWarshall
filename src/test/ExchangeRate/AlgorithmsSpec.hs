@@ -124,10 +124,10 @@ optimumSpec =
         Left "There is no exchange between (KRAKEN, USD) and (GDAX, BTC)"
     it "Reachable from kraken_btc to gdax_usd" $
       optimum kraken_btc gdax_usd vertexVector matrix2 `shouldBe`
-        Right (1001.0, [Vertex "GDAX" "BTC", Vertex "GDAX" "USD"])
+        Right (RateEntry 1001.0 kraken_btc [gdax_btc, gdax_usd])
     it "Reachable from gdax_usd to gdax_btc" $
       optimum gdax_usd gdax_btc vertexVector matrix2 `shouldBe`
-        Right (9.0e-4, [Vertex "KRAKEN" "USD", Vertex "KRAKEN" "BTC", Vertex "GDAX" "BTC"])
+        Right (RateEntry 0.0009 gdax_usd [kraken_usd, kraken_btc, gdax_btc])
   where
     vertices = [kraken_btc, kraken_usd, gdax_usd, gdax_btc]
     vertexVector = setToVector $ S.fromList vertices

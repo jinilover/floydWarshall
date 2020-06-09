@@ -60,12 +60,12 @@ runAlgo k matrix -- k is the number of times to run this algo
 
 -- | Return the best rate and the path 
 -- for the provided `src` and `dest` vertices if it exists
-optimum :: Vertex -> Vertex -> V.Vector Vertex -> Matrix RateEntry -> Either String (Double, [Vertex])
+optimum :: Vertex -> Vertex -> V.Vector Vertex -> Matrix RateEntry -> Either String RateEntry
 optimum src dest vector matrix = 
   do
     srcIdx <- maybeToEither (show src ++ " is not entered before") $ V.elemIndex src vector
     destIdx <- maybeToEither (show dest ++ " is not entered before") $ V.elemIndex dest vector
-    let RateEntry{..} = matrix ! srcIdx ! destIdx
+    let entry@RateEntry{..} = matrix ! srcIdx ! destIdx
     if null _path 
       then Left $ "There is no exchange between " ++ show src ++ " and " ++ show dest 
-      else Right (_bestRate, _path)
+      else Right entry
