@@ -15,9 +15,9 @@ import Control.Monad.Writer
 
 import qualified Data.Map as M
 
-import Types
-import Algorithms
-import Parsers
+import Types (DisplayMessage(..), AppState(..), RateEntry(..), UserInput(..), Vertex(..))
+import Algorithms (floydWarshall, buildMatrix, optimum)
+import Parsers (parseRates, parseExchPair)
 import Utils (updateMap, updateSet, setToVector)
 
 serveReq

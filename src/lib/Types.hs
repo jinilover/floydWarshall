@@ -63,6 +63,3 @@ instance Semigroup DisplayMessage where
 
 instance Semigroup DisplayMessage => Monoid DisplayMessage where
   mempty = DisplayMessage [] []
-
-emptyUserInput :: UserInput
-emptyUserInput = UserInput M.empty S.empty

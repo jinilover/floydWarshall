@@ -11,7 +11,7 @@ import Data.Vector as V hiding ((++), any, null)
 
 import qualified Data.Map as M
 
-import Types
+import Types (RateEntry(..), Matrix, Vertex(..), ExchRates)
 import Utils (isolatedEntry)
 
 -- | Build a matrix of n*n size where n is the size of the `Vertex` vector

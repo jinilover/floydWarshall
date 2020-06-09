@@ -5,7 +5,7 @@ import Data.Vector as V hiding (length, zip, foldl, (++))
 import qualified Data.Map as M
 import qualified Data.Set as S
 
-import Types
+import Types (Vertex, RateEntry(..), UserInput(..))
 
 -- | Convert a `Vertex` set to a Vertice vector and a map of the `Vertex` to
 -- its index in the `Vector`.  `Vector` is better performed in indexing an
@@ -23,3 +23,6 @@ updateSet = foldl . flip $ S.insert
 -- with any other exchange yet
 isolatedEntry :: Vertex -> RateEntry
 isolatedEntry start = RateEntry 0.0 start []
+
+emptyUserInput :: UserInput
+emptyUserInput = UserInput M.empty S.empty

@@ -8,9 +8,9 @@ import Test.HUnit.Lang
 import Data.String (String)
 import Data.Time.Clock.POSIX
 
-import Parsers
+import Parsers (parseRates, parseExchPair)
 
-import MockData
+import MockData (kraken_btc, kraken_usd, gdax_usd)
 
 exchRatesParserSpec :: Spec
 exchRatesParserSpec =

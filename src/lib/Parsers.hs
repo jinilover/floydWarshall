@@ -12,7 +12,7 @@ import Text.Parsec.Error
 import Data.Char
 import Data.Time hiding (parseTime)
 
-import Types
+import Types (Vertex(..))
 
 -- | Parse the string for updating exchange rates.  It extracts timestamp,
 -- exchange, source currency, destination currency, forward rate and backward

@@ -3,7 +3,7 @@ module TestUtils
 
 import Data.Vector as V
 
-import Types
+import Types (Matrix, RateEntry(..), Vertex)
 
 listsToMatrix :: [[a]] -> Matrix a
 listsToMatrix = V.fromList . (fmap V.fromList)

@@ -4,7 +4,7 @@ module MockData
 import Data.Time.Clock.POSIX
 import qualified Data.Vector as V
 
-import Types
+import Types (Vertex(..))
 
 import TestUtils (buildRateMatrix)
 

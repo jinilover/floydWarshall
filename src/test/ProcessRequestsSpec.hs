@@ -12,10 +12,19 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 import qualified Data.Vector as V
 
-import Types
-import Utils
-import ProcessRequests
-import MockData
+import Types (AppState(..), DisplayMessage(..), RateEntry(..), Matrix, UserInput(..))
+import Utils (updateMap, updateSet, emptyUserInput)
+import ProcessRequests (serveReq, findBestRate, updateRates)
+
+import MockData ( kraken_btc
+                , kraken_usd
+                , kraken_btc_usd
+                , kraken_usd_btc
+                , gdax_btc
+                , gdax_usd
+                , gdax_btc_usd
+                , gdax_usd_btc
+                , d2017_11_01t09_42_24 )
 import TestUtils (buildRateMatrix)
 
 serveReqSpec :: Spec
@@ -54,9 +63,9 @@ serveReqSpec =
       in  traverse (runRWST rwst "2017-11-0109:42:23+00:00 KRAKEN BTC USD 1000.0 0.0009") appStates
             `shouldBe` expected
             
-updateRatesSpec' :: Spec
-updateRatesSpec' = 
-  describe "updateRatesSpec'" $ do
+updateRatesSpec :: Spec
+updateRatesSpec = 
+  describe "updateRatesSpec" $ do
     let rwst = updateRates :: RWST String () AppState (Either [String]) ()
     it "orig AppState has empty UserInput, success update should return OutSync with added rates" $
       let expected = Right ((), OutSync ui1, ())
@@ -83,9 +92,9 @@ updateRatesSpec' =
           expected = Right . ((), , ()) <$> origStates
       in  nub (runRWST rwst <$> inputStrings <*> origStates) `shouldBe` expected
 
-findBestRateSpec' :: Spec
-findBestRateSpec' = 
-  describe "findBestRateSpec'" $ do
+findBestRateSpec :: Spec
+findBestRateSpec = 
+  describe "findBestRateSpec" $ do
     let rwst = findBestRate :: RWST String () AppState (Either [String]) RateEntry
     it "failed due to source vertex not exists" $
       runRWST rwst "KRAKEN STC GDAX USD" outSyncUi2
@@ -126,4 +135,4 @@ emptyMatrix :: Matrix RateEntry
 emptyMatrix = V.empty -- updateRates doesn't care the matrix value
 
 specs :: [Spec]
-specs = [serveReqSpec, findBestRateSpec', updateRatesSpec']
+specs = [serveReqSpec, findBestRateSpec, updateRatesSpec]

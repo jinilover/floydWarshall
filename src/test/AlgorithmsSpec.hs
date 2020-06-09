@@ -10,8 +10,8 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 import Data.Vector as V
 
-import Types
-import Algorithms
+import Types (RateEntry(..))
+import Algorithms (buildMatrix, floydWarshall, optimum)
 import Utils (setToVector)
 
 import MockData

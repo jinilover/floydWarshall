@@ -6,9 +6,14 @@ import Test.Hspec
 import qualified Data.Set as S
 import qualified Data.Vector as V
 
-import Utils
+import Utils (setToVector)
 
-import MockData
+import MockData ( gdax_btc
+                , gdax_usd
+                , kraken_btc
+                , kraken_usd
+                , gdax_usd
+                , gdax_usd )
 
 setToVectorSpec :: Spec
 setToVectorSpec =
