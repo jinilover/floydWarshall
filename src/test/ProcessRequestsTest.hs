@@ -9,22 +9,21 @@ import Data.List (nub)
 import Data.String (String)
 
 import qualified Data.Map as M
-import qualified Data.Vector as V
 import qualified Data.Set as S
 
 import Hedgehog
 import Test.Tasty
 import Test.Tasty.Hedgehog
 
+import Algorithms (buildMatrix, floydWarshall)
 import ProcessRequests (serveReq, findBestRate, updateRates)
 import Types (UserInput(..)
             , exchRateTimes
             , vertices
             , RateEntry(..)
-            , Matrix
             , AppState(..)
             , DisplayMessage(..))
-import Utils (updateMap, updateSet, emptyUserInput)
+import Utils (updateMap, updateSet, blankState, setToVector)
 
 import MockData ( gdax_btc
                 , gdax_usd
@@ -35,7 +34,6 @@ import MockData ( gdax_btc
                 , kraken_btc_usd
                 , kraken_usd_btc
                 , d2017_11_01t09_42_24 )
-import TestUtils (rateMatrixForTest)              
 
 test_ProcessRequests :: TestTree
 test_ProcessRequests = testGroup "ProcessRequests"
@@ -83,8 +81,7 @@ serveReq_updateRates =
   let res = [ "(KRAKEN, BTC) -- 1000.0 2017-11-01 09:42:23 UTC --> (KRAKEN, USD)"
             , "(KRAKEN, USD) -- 9.0e-4 2017-11-01 09:42:23 UTC --> (KRAKEN, BTC)" ]
       expected = Right ((), outSyncUi1, mempty {_res = res})
-      result = runRWST serveReq "2017-11-01T09:42:23+00:00 KRAKEN BTC USD 1000.0 0.0009" $
-                OutSync emptyUserInput
+      result = runRWST serveReq "2017-11-01T09:42:23+00:00 KRAKEN BTC USD 1000.0 0.0009" blankState
   in  property do result === expected
 
 serveReq_findBestRate :: Property
@@ -104,13 +101,12 @@ serveReq_findBestRate =
 
 updateRates_addRateToEmptyState :: Property
 updateRates_addRateToEmptyState = property do
-  runRWST updateRates "2017-11-01T09:42:23+00:00 KRAKEN BTC USD 1000.0 0.0009" (OutSync emptyUserInput) 
+  runRWST updateRates "2017-11-01T09:42:23+00:00 KRAKEN BTC USD 1000.0 0.0009" blankState
     === Right ((), outSyncUi1, ())
 
 updateRates_turnStateOutSync :: Property
 updateRates_turnStateOutSync = 
-  -- TODO InSync ui1 emptyMatrix
-  let origStates = [InSync ui1 emptyMatrix, outSyncUi1] -- no matter it's originally `InSync` or `OutSync`
+  let origStates = [inSyncUi1, outSyncUi1] -- no matter it's originally `InSync` or `OutSync`
       result = flip traverse origStates $ 
                 runRWST updateRates "2017-11-01T09:43:23+00:00 GDAX BTC USD 1001.0 0.0008"
       s = OutSync $ ui1 & exchRateTimes %~ updateMap [gdax_btc_usd, gdax_usd_btc]
@@ -134,7 +130,7 @@ updateRates_notNewerTs :: Property
 updateRates_notNewerTs = 
   let inputStrings =  [ "2017-11-01T09:42:20+00:00 KRAKEN USD BTC 0.00089 1001.1"
                       , "2017-11-01T09:42:23+00:00 KRAKEN USD BTC 0.00089 1001.1" ] 
-      origStates = [InSync ui1 emptyMatrix, outSyncUi1]
+      origStates = [inSyncUi1, outSyncUi1]
       result = sequence . nub $ runRWST updateRates <$> inputStrings <*> origStates
       expected = Right (origStates <&> ((), , ()))
   in  property do result === expected
@@ -168,25 +164,16 @@ ui1 = let _exchRateTimes = M.fromList [kraken_btc_usd, kraken_usd_btc]
           _vertices = S.fromList [kraken_btc, kraken_usd]
       in  UserInput{..}
 
-outSyncUi1 :: AppState
-outSyncUi1 = OutSync ui1
-
 ui2 :: UserInput
 ui2 = ui1 & exchRateTimes %~ updateMap [gdax_btc_usd, gdax_usd_btc]
           & vertices %~ updateSet [gdax_btc, gdax_usd]
 
-outSyncUi2 :: AppState
-outSyncUi2 = OutSync ui2
+[inSyncUi1, inSyncUi2, outSyncUi1, outSyncUi2] = 
+  [inSync, OutSync] <*> [ui1, ui2]
 
-inSyncUi2 :: AppState
-inSyncUi2 = 
-  let vertex = V.fromList [gdax_btc, gdax_usd, kraken_btc, kraken_usd]
-      matrixOfTuples = 
-        [ [(0.0, []),         (1001.0, [1]),    (1.0, [2]),       (1001.0, [1,3])   ]
-        , [(0.0009, [3,2,0]), (0.0, []),        (0.0009, [3,2]),  (1.0, [3])        ]
-        , [(1.0, [0]),        (1001.0, [0,1]),  (0.0, []),        (1001.0, [0,1,3]) ]
-        , [(0.0009, [2,0]),   (1.0, [1]),       (0.0009, [2]),    (0.0, [])         ] ]
-  in InSync ui2 $ rateMatrixForTest vertex matrixOfTuples
-
-emptyMatrix :: Matrix RateEntry
-emptyMatrix = V.empty -- updateRates doesn't care the matrix value
+inSync :: UserInput -> AppState
+inSync ui@UserInput{..} = 
+  let vector = setToVector _vertices
+      exchRates = M.map fst _exchRateTimes
+      matrix = floydWarshall $ buildMatrix exchRates vector
+  in  InSync ui matrix

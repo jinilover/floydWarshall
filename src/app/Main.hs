@@ -6,10 +6,10 @@ import Data.String (String)
 
 import ProcessRequests (serveReq)
 import Types (AppState(..), DisplayMessage(..))
-import Utils (emptyUserInput)
+import Utils (blankState)
 
 main :: IO ()
-main = userPrompt $ OutSync emptyUserInput
+main = userPrompt blankState
 
 -- | Prompt for user input, and pass the string to `updateRates` to process.
 -- If it process successfully, it will display the result.  Otherwise,
