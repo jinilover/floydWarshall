@@ -15,6 +15,7 @@ common deps
   build-depends:        base-noprelude
                       , classy-prelude
                       , containers
+                      , lens
                       , mtl
                       , parsec
                       , protolude
@@ -45,54 +46,21 @@ executable fsm-rwst-parsec-floydWarshall
 
 common test-deps
   build-depends:      fsm-rwst-parsec-floydWarshall
-                    , HUnit
-                    , hspec
-                    -- , hedgehog
-                    -- , tasty
-                    -- , tasty-hedgehog
-                    -- , tasty-hunit
+                    , hedgehog
+                    , tasty
+                    , tasty-hedgehog
+                    , tasty-hunit
 
 test-suite tests
   import:             lang, deps, test-deps
   type:               exitcode-stdio-1.0
-  main-is:            Spec.hs
+  main-is:            tests.hs
   hs-source-dirs:     src/test
-  other-modules:      AlgorithmsSpec
+  other-modules:      AlgorithmsTest
                     , MockData
-                    , ParsersSpec
-                    , ProcessRequestsSpec
+                    , ParserTest
+                    , ProcessRequestsTest
                     , TestUtils
-                    , UtilsSpec
+                    , UtilsTest
   default-language:   Haskell2010
   ghc-options:        -Wall -threaded
-
--- test-suite fsm-rwst-parsec-floydWarshall-test
---   type: exitcode-stdio-1.0
---   main-is: Spec.hs
---   hs-source-dirs:
---       test
---   default-extensions: OverloadedStrings , RecordWildCards , NoImplicitPrelude
---   ghc-options: -threaded -rtsopts -with-rtsopts=-N
---   build-depends:
---       HUnit
---     , MissingH
---     , base >=4.7 && <5
---     , containers
---     , fsm-rwst-parsec-floydWarshall
---     , hspec
---     , parsec
---     , protolude
---     , split
---     , time
---     , utility-ht
---     , vector
---     , writer-cps-mtl
---   other-modules:
---       ExchangeRate.AlgorithmsSpec
---       ExchangeRate.MockData
---       ExchangeRate.ParsersSpec
---       ExchangeRate.ProcessRequestsSpec
---       ExchangeRate.TestUtils
---       ExchangeRate.UtilsSpec
---       Paths_fsm_rwst_parsec_floydWarshall
---   default-language: Haskell2010

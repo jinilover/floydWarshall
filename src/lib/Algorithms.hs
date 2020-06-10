@@ -11,14 +11,14 @@ import Data.Vector as V hiding ((++), any, null)
 
 import qualified Data.Map as M
 
-import Types (RateEntry(..), Matrix, Vertex(..), ExchRates)
+import Types (RateEntry(..), Matrix, Vertex(..))
 import Utils (isolatedEntry)
 
 -- | Build a matrix of n*n size where n is the size of the `Vertex` vector
 -- Each entry is filled with the rate between the Vertex if there is any
--- available from the given `ExchRates` map.  This matrix will be applied the
+-- available from the given map.  This matrix will be applied the
 -- floydWarshall algorithm
-buildMatrix :: ExchRates -> V.Vector Vertex -> Matrix RateEntry
+buildMatrix :: M.Map (Vertex, Vertex) Double -> V.Vector Vertex -> Matrix RateEntry
 buildMatrix exRates vertices = buildRow <$> indices
   where
     indices = V.fromList [0 .. V.length vertices - 1]
@@ -28,7 +28,7 @@ buildMatrix exRates vertices = buildRow <$> indices
           | i == j = entry -- i is row number, j is column number
           | _ccy vtxI == _ccy vtxJ = entry {_bestRate = 1.0, _path = [vtxJ]}
           | otherwise = case M.lookup (vtxI, vtxJ) exRates of
-                          Just (rate, _) -> entry {_bestRate = rate, _path = [vtxJ]}
+                          Just rate -> entry {_bestRate = rate, _path = [vtxJ]}
                           _ -> entry
           where
             vtxJ = vertices ! j

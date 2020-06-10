@@ -17,5 +17,5 @@ createRateMatrix vertices matrix =
           _path = indices <&> (vertices !)
       in  RateEntry{..}
 
-buildRateMatrix :: V.Vector Vertex -> [[(Double, [Int])]] -> Matrix RateEntry
-buildRateMatrix vertices = createRateMatrix vertices . listsToMatrix
+rateMatrixForTest :: V.Vector Vertex -> [[(Double, [Int])]] -> Matrix RateEntry
+rateMatrixForTest vertices = createRateMatrix vertices . listsToMatrix

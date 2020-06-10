@@ -7,6 +7,7 @@ module ProcessRequests
   , updateRates )
   where
 
+import Control.Lens
 import Data.Maybe (isNothing, fromJust)
 import Data.List (last)
 import Data.String (String)
@@ -15,7 +16,13 @@ import Control.Monad.Writer
 
 import qualified Data.Map as M
 
-import Types (DisplayMessage(..), AppState(..), RateEntry(..), UserInput(..), Vertex(..))
+import Types (DisplayMessage(..)
+            , AppState(..)
+            , RateEntry(..)
+            , UserInput(..)
+            , exchRateTimes
+            , vertices
+            , Vertex(..))
 import Algorithms (floydWarshall, buildMatrix, optimum)
 import Parsers (parseRates, parseExchPair)
 import Utils (updateMap, updateSet, setToVector)
@@ -23,8 +30,8 @@ import Utils (updateMap, updateSet, setToVector)
 -- | It doesn't know which request the user is asking for,
 -- therefore it call `updateRates` first, if it encounters error, 
 -- it will call `findBestRate`, if it still encounters error
--- it will write all the error using `MonadWriter DisplayMessage` and ask the user to raise a valid request
--- o.w. it will the success message using `MonadWriter DisplayMessage`.
+-- it will write all the error using `MonadWriter DisplayMessage` that the user doesn't raise any valid request
+-- o.w. it will write the success message using `MonadWriter DisplayMessage`.
 serveReq
   :: (MonadReader String m, MonadError [String] m, MonadState AppState m, MonadWriter DisplayMessage m)
   => m ()
@@ -35,7 +42,7 @@ serveReq =
   where
     updateRatesM = updateRates *> get >>= \s -> 
         let UserInput{..} = userInputFromState s
-            msgs = M.toAscList _exchRates <&> \((src, dest), (rate, time)) ->
+            msgs = M.toAscList _exchRateTimes <&> \((src, dest), (rate, time)) ->
                     show src ++ " -- " ++ show rate ++ " " ++ show time ++ " --> " ++ show dest
         in  tell mempty {_res = msgs}
     findBestRateM = findBestRate >>= \entry -> tell mempty {_res = presentRateEntry entry}
@@ -68,7 +75,9 @@ findBestRate =
     liftEither . first return $ optimum src dest (setToVector _vertices) matrix 
     where
       syncMatrix (OutSync ui@UserInput{..}) =
-        let syncdMatrix = floydWarshall . buildMatrix _exchRates . setToVector $ _vertices
+        let vector = setToVector _vertices
+            exchRates = M.map fst _exchRateTimes
+            syncdMatrix = floydWarshall $ buildMatrix exchRates vector
         in  (ui, syncdMatrix, True)
       syncMatrix (InSync ui syncdMatrix) = (ui,syncdMatrix, False)
 
@@ -82,14 +91,13 @@ updateRates =
     r <- ask
     (time, src, dest, fwdR, bkdR) <- liftEither $ parseRates r
     ui@UserInput{..} <- get <&> userInputFromState
-    let rateOutdated = M.lookup (src, dest) _exchRates <&> ((< time) . snd)
+    let rateOutdated = M.lookup (src, dest) _exchRateTimes <&> ((< time) . snd)
         updateRequired = isNothing rateOutdated || fromJust rateOutdated
     when updateRequired (put $ newState time src dest fwdR bkdR ui)
   where
-    newState time src dest fwdR bkdR UserInput{..} = 
-      let newExchRates = updateMap _exchRates [((dest, src), (bkdR, time)), ((src, dest), (fwdR, time))]
-          newVertices = updateSet _vertices [src, dest]
-      in  OutSync $ UserInput newExchRates newVertices
+    newState time src dest fwdR bkdR ui =
+      OutSync $ ui & exchRateTimes %~ updateMap [((dest, src), (bkdR, time)), ((src, dest), (fwdR, time))]
+                   & vertices %~ updateSet [src, dest]
 
 userInputFromState :: AppState -> UserInput
 userInputFromState (InSync ui _) = ui
