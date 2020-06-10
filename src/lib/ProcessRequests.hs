@@ -32,12 +32,12 @@ import Utils (updateMap, updateSet, setToVector)
 -- it will write all the error using `MonadWriter DisplayMessage` that the user doesn't raise any valid request
 -- o.w. it will write the success message using `MonadWriter DisplayMessage`.
 serveReq
-  :: (MonadReader Text m, MonadError [Text] m, MonadState AppState m, MonadWriter DisplayMessage m)
+  :: (MonadReader Text m, MonadError Text m, MonadState AppState m, MonadWriter DisplayMessage m)
   => m ()
 serveReq = 
-  catchError updateRatesM \errs -> 
-    tell mempty {_err = errs ++ ["Invalid request to update rates, probably a request for best rate"]} *> 
-      catchError findBestRateM \stillErrs -> tell mempty {_err = stillErrs}
+  catchError updateRatesM \err -> 
+    tell mempty { _err = [err, "Invalid request to update rates, probably a request for best rate"] } *> 
+      catchError findBestRateM \stillErr -> tell mempty { _err = [stillErr] }
   where
     updateRatesM = updateRates *> get >>= \s -> 
         let UserInput{..} = userInputFromState s
@@ -62,7 +62,7 @@ serveReq =
 -- if no, run floyd-warshall for an optimised matrix, 
 -- o.w. use the matrix to find the best rate and the exchange nodes involved 
 findBestRate 
-  :: (MonadReader Text m, MonadError [Text] m, MonadState AppState m)
+  :: (MonadReader Text m, MonadError Text m, MonadState AppState m)
   => m RateEntry
 findBestRate =
   do
@@ -71,7 +71,7 @@ findBestRate =
     s <- get
     let (ui@UserInput{..}, matrix, isStateChanged) = syncMatrix s
     when isStateChanged (put $ InSync ui matrix)
-    liftEither . first return $ optimum src dest (setToVector _vertices) matrix 
+    liftEither $ optimum src dest (setToVector _vertices) matrix 
     where
       syncMatrix (OutSync ui@UserInput{..}) =
         let vector = setToVector _vertices
@@ -83,7 +83,7 @@ findBestRate =
 -- | Parse the exchange nodes, the corresponding rates and the timestamp from
 -- the input string and stores the rates to `AppState` if the timestamp is newer.
 updateRates
-  :: (MonadReader Text m, MonadError [Text] m, MonadState AppState m)
+  :: (MonadReader Text m, MonadError Text m, MonadState AppState m)
   => m ()
 updateRates =
   do

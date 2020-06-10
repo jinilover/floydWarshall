@@ -4,12 +4,16 @@ module Parsers
   where
 
 import Prelude hiding (option)
-import Text.Read
-import Text.Parsec
-import Text.Parsec.Text
-import Text.Parsec.Error
+import Control.Monad.Fail (fail)
+import Data.Attoparsec.Text ( Parser
+                            , skipSpace
+                            , parseOnly
+                            , many1
+                            , satisfy
+                            , letter
+                            , double )
 import Data.Text
-import Data.Time hiding (parseTime)
+import Data.Time (UTCTime, parseTimeM, defaultTimeLocale)
 
 import Types (Vertex(..))
 
@@ -18,23 +22,20 @@ import Types (Vertex(..))
 -- rate from the string by using parsec functions
 exchRatesParser :: Parser (UTCTime, Vertex, Vertex, Double, Double)
 exchRatesParser = do
-  tS <- skipSpaces >> many1 (satisfy (/= ' '))
-  time <- maybe (parserFail ("Invalid timestamp: " ++ tS)) return $ parseTime tS
-  exchS <- skipSpaces >> alphabets
-  srcS <- skipSpaces >> alphabets
-  destS <- skipSpaces >> alphabets
-  fwdR <- skipSpaces >> decimal
-  bkdR <- skipSpaces >> decimal
-  when (fwdR * bkdR > 1.0) $ parserFail ("Product of " ++ show fwdR ++ " and " ++ show bkdR ++ " must be <= 1.0")
+  tS <- skipSpace >> many1 (satisfy (/= ' '))
+  time <- parseTimestamp tS
+  exchS <- skipSpace >> alphabets
+  srcS <- skipSpace >> alphabets
+  destS <- skipSpace >> alphabets
+  fwdR <- skipSpace >> double >>= positiveCheck
+  bkdR <- skipSpace >> double >>= positiveCheck
+  when (fwdR * bkdR > 1.0) $ fail ("Product of " ++ show fwdR ++ " and " ++ show bkdR ++ " must be <= 1.0")
   [exch, src, dest] <- return $ fmap toUpper [exchS, srcS, destS]
-  when (src == dest) $ parserFail "The currencies must be different"
+  when (src == dest) $ fail "The currencies must be different"
   return (time, Vertex exch src, Vertex exch dest, fwdR, bkdR)
   where
-    decimal = read <$> ((++) <$> integer <*> mantissa) >>= positive
-    mantissa = option "" $ (:) <$> char '.' <*> integer
-    integer = many1 digit
-    parseTime = parseTimeM True defaultTimeLocale "%Y-%m-%dT%H:%M:%S%z"
-    positive r = if r <= 0 then parserFail "Rate must be > 0" else return r
+    parseTimestamp = parseTimeM True defaultTimeLocale "%Y-%m-%dT%H:%M:%S%z"
+    positiveCheck r = if r <= 0 then fail "Rate must be > 0" else return r
 
 -- | Parse the string to a pair of vertices.  These vertices are later on used
 -- for requesting best rate.  It extracts source exchange, source currency,
@@ -42,34 +43,20 @@ exchRatesParser = do
 -- functions.
 exchPairParser :: Parser (Vertex, Vertex)
 exchPairParser = do
-  srcExch' <- skipSpaces >> alphabets
-  srcCcy' <- skipSpaces >> alphabets
-  destExch' <- skipSpaces >> alphabets
-  destCcy' <- skipSpaces >> alphabets
+  srcExch' <- skipSpace >> alphabets
+  srcCcy' <- skipSpace >> alphabets
+  destExch' <- skipSpace >> alphabets
+  destCcy' <- skipSpace >> alphabets
   [srcExch, srcCcy, destExch, destCcy] <- return $ fmap toUpper [srcExch', srcCcy', destExch', destCcy']
   let pair@(src, dest) = (Vertex srcExch srcCcy, Vertex destExch destCcy)
-  when (src == dest) $ parserFail "source must be different from destination"
+  when (src == dest) $ fail "source must be different from destination"
   return pair
 
 alphabets :: Parser Text
 alphabets = many1 letter <&> toS
 
-skipSpaces :: Parser ()
-skipSpaces = skipMany space
+parseRates :: Text -> Either Text (UTCTime, Vertex, Vertex, Double, Double)
+parseRates = first toS . parseOnly exchRatesParser
 
-parseErrorMsgs :: ParseError -> [Text]
-parseErrorMsgs = fmap (toS . interpret) . errorMessages
-  where
-    interpret (SysUnExpect s) = "System unexpecting: " <> s
-    interpret (UnExpect s) = "Unexpecting: " <> s
-    interpret (Expect s) = "Expecting: " <> s
-    interpret (Message s) = "General error: " <> s
-
-parseRates :: Text -> Either [Text] (UTCTime, Vertex, Vertex, Double, Double)
-parseRates = parseOnly exchRatesParser
-
-parseExchPair :: Text -> Either [Text] (Vertex, Vertex)
-parseExchPair = parseOnly exchPairParser
-
-parseOnly :: Parser a -> Text -> Either [Text] a
-parseOnly p = first parseErrorMsgs . parse p "regularParse"
+parseExchPair :: Text -> Either Text (Vertex, Vertex)
+parseExchPair = first toS . parseOnly exchPairParser

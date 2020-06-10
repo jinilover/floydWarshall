@@ -1,5 +1,5 @@
-{ mkDerivation, base-noprelude, classy-prelude, containers
-, hedgehog, lens, mtl, parsec, protolude, split, stdenv, tasty
+{ mkDerivation, attoparsec, base-noprelude, classy-prelude
+, containers, hedgehog, lens, mtl, protolude, split, stdenv, tasty
 , tasty-hedgehog, tasty-hunit, text, time, vector, writer-cps-mtl
 }:
 mkDerivation {
@@ -9,17 +9,17 @@ mkDerivation {
   isLibrary = true;
   isExecutable = true;
   libraryHaskellDepends = [
-    base-noprelude classy-prelude containers lens mtl parsec protolude
-    split text time vector writer-cps-mtl
+    attoparsec base-noprelude classy-prelude containers lens mtl
+    protolude split text time vector writer-cps-mtl
   ];
   executableHaskellDepends = [
-    base-noprelude classy-prelude containers lens mtl parsec protolude
-    split text time vector writer-cps-mtl
+    attoparsec base-noprelude classy-prelude containers lens mtl
+    protolude split text time vector writer-cps-mtl
   ];
   testHaskellDepends = [
-    base-noprelude classy-prelude containers hedgehog lens mtl parsec
-    protolude split tasty tasty-hedgehog tasty-hunit text time vector
-    writer-cps-mtl
+    attoparsec base-noprelude classy-prelude containers hedgehog lens
+    mtl protolude split tasty tasty-hedgehog tasty-hunit text time
+    vector writer-cps-mtl
   ];
   description = "Apply FloydWarshall algorithm";
   license = "unknown";

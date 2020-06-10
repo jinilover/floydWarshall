@@ -13,11 +13,11 @@ common lang
 
 common deps
   build-depends:        base-noprelude
+                      , attoparsec
                       , classy-prelude
                       , containers
                       , lens
                       , mtl
-                      , parsec
                       , protolude
                       , split
                       , text

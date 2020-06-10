@@ -16,7 +16,7 @@ test_Parser :: TestTree
 test_Parser = testGroup "Parser"
   [ testGroup "parseRates" 
     [ testGroup "invalid input" 
-      [ testProperty "invalid timestamp" parseRates_invalidTimestamp
+      [ testProperty "invalid timestamp" parseRates_invalidTimestamp 
       , testProperty "rate product > 1" parseRates_productBiggerThan1
       , testProperty "same currencies" parseRates_sameCurrencies
       , testProperty "same currencies ignore case" parseRates_sameCurrenciesIgnoreCase
@@ -40,38 +40,38 @@ test_Parser = testGroup "Parser"
 
 parseRates_invalidTimestamp :: Property
 parseRates_invalidTimestamp = property do
-  parseRates "2017-11-01T09:42:3+00:00 KRAKEN BTC USD 1000.0 0.0009"
-    `expectParseError` "General error: Invalid timestamp: 2017-11-01T09:42:3+00:00"
+  parseRates "2017-11-01T09:42:3+00:00 KRAKEN BTC USD 1000.0 0.0009" === 
+    Left "Failed reading: parseTimeM: no parse of \"2017-11-01T09:42:3+00:00\""
 
 parseRates_productBiggerThan1 :: Property
 parseRates_productBiggerThan1 = property do
-  parseRates "2017-11-01T09:42:23+00:00 KRAKEN BTC USD 1000.0 0.0091"
-    `expectParseError` "General error: Product of 1000.0 and 9.1e-3 must be <= 1.0"
+  parseRates "2017-11-01T09:42:23+00:00 KRAKEN BTC USD 1000.0 0.0091" === 
+    Left "Failed reading: Product of 1000.0 and 9.1e-3 must be <= 1.0"
 
 parseRates_sameCurrencies :: Property
 parseRates_sameCurrencies = property do
-  parseRates "2017-11-01T09:42:23+00:00 KRAKEN BTC BTC 1000.0 0.0009"
-    `expectParseError` "General error: The currencies must be different"
+  parseRates "2017-11-01T09:42:23+00:00 KRAKEN BTC BTC 1000.0 0.0009" === 
+    Left "Failed reading: The currencies must be different"
 
 parseRates_sameCurrenciesIgnoreCase :: Property
 parseRates_sameCurrenciesIgnoreCase = property do
-  parseRates "2017-11-01T09:42:23+00:00 KRAKEN btc BTC 1000.0 0.0009"
-    `expectParseError` "General error: The currencies must be different"
+  parseRates "2017-11-01T09:42:23+00:00 KRAKEN btc BTC 1000.0 0.0009" === 
+    Left "Failed reading: The currencies must be different"
 
 parseRates_zeroFwdRate :: Property
 parseRates_zeroFwdRate = property do
-  parseRates "2017-11-01T09:42:23+00:00 KRAKEN BTC USD 0 0.0009"
-    `expectParseError` "General error: Rate must be > 0"
+  parseRates "2017-11-01T09:42:23+00:00 KRAKEN BTC USD 0 0.0009" === 
+    Left "Failed reading: Rate must be > 0"
 
 parseRates_negativeBkdRate :: Property
 parseRates_negativeBkdRate = property do
-  parseRates "2017-11-01T09:42:23+00:00 KRAKEN BTC USD 1000 -0.0009"
-    `expectParseError` "System unexpecting: \"-\""
+  parseRates "2017-11-01T09:42:23+00:00 KRAKEN BTC USD 1000 -0.0009" === 
+    Left "Failed reading: Rate must be > 0"
 
 parseRates_invalidFwdRate :: Property
 parseRates_invalidFwdRate = property do
-  parseRates "2017-11-01T09:42:23+00:00 KRAKEN BTC USD 1000.0x 0.0009"
-    `expectParseError` "System unexpecting: \"x\""
+  parseRates "2017-11-01T09:42:23+00:00 KRAKEN BTC USD 1000.0x 0.0009" === 
+    Left "Failed reading: takeWhile1"
 
 parseRates_validString :: Property
 parseRates_validString = property do
@@ -90,8 +90,8 @@ parseRates_ccyToUpperCase = property do
 
 parseExchPair_sameSrcDest :: Property
 parseExchPair_sameSrcDest = property do
-  parseExchPair "KRAKEN BTC KRAKEN BTC" `expectParseError` 
-    "General error: source must be different from destination"
+  parseExchPair "KRAKEN BTC KRAKEN BTC" === 
+    Left "Failed reading: source must be different from destination"
 
 parseExchPair_validString :: Property
 parseExchPair_validString = property do 
@@ -104,7 +104,3 @@ parseExchPair_ignoreSpace = property do
 parseExchPair_ignoreCase :: Property 
 parseExchPair_ignoreCase = property do
   parseExchPair "kraken btC Gdax Usd" === Right (kraken_btc, gdax_usd)
-
-expectParseError :: MonadTest m => Either [Text] a -> Text -> m ()
-expectParseError (Left errs) s = assert $ elem s errs
-expectParseError _ _ = failure

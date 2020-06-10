@@ -23,11 +23,11 @@ userPrompt s =
     traverse_ putStrLn msgs
     userPrompt newS
   where
-    run :: RWST Text DisplayMessage AppState (Either [Text]) () 
+    run :: RWST Text DisplayMessage AppState (Either Text) () 
           -> Text 
           -> IO ((), AppState, [Text])
     run req r = return $ case runRWST req r s of
-      Left errs -> ((), s, errs ++ ["\n"])
+      Left err -> ((), s, [err, ""])
       Right (_, newS, (DisplayMessage errs [])) -> 
         ((), newS, errs ++ ["You neither enter exchange rates or request best rate, please enter a valid input\n"])
       Right (_, newS, (DisplayMessage _ res)) -> ((), newS, res ++ [""]) 

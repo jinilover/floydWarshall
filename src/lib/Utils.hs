@@ -2,6 +2,7 @@ module Utils
   where
 
 import Data.Vector as V hiding (length, zip, foldl, (++))
+
 import qualified Data.Map as M
 import qualified Data.Set as S
 

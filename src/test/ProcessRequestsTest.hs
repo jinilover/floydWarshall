@@ -62,13 +62,9 @@ test_ProcessRequests = testGroup "ProcessRequests"
 
 serveReq_bothInvalid :: Property
 serveReq_bothInvalid = 
-  let err = [ "System unexpecting: \" \""
-            , "General error: Invalid timestamp: 2017-11-0109:42:23+00:00"
+  let err = [ "Failed reading: parseTimeM: no parse of \"2017-11-0109:42:23+00:00\""
             , "Invalid request to update rates, probably a request for best rate"
-            , "System unexpecting: \"2\""
-            , "System unexpecting: \"2\""
-            , "Expecting: space"
-            , "Expecting: letter" ]
+            , "letter: Failed reading: satisfy" ]
       states = [inSyncUi2, outSyncUi2] 
       expected = Right $ states <&> ((), , mempty {_err = err})
       result = flip traverse states $ 
@@ -85,8 +81,7 @@ serveReq_updateRates =
 
 serveReq_findBestRate :: Property
 serveReq_findBestRate = 
-  let err = [ "System unexpecting: \" \""
-            , "General error: Invalid timestamp: KRAKEN"
+  let err = [ "Failed reading: parseTimeM: no parse of \"KRAKEN\""
             , "Invalid request to update rates, probably a request for best rate" ]
       res = [ "BEST_RATES_BEGIN KRAKEN BTC KRAKEN USD 1001.0"
             , "(KRAKEN, BTC)"
@@ -136,15 +131,15 @@ updateRates_notNewerTs =
 
 findBestRate_srcNotExists :: Property
 findBestRate_srcNotExists = 
-  let result :: Either [Text] (RateEntry, AppState, ())
+  let result :: Either Text (RateEntry, AppState, ())
       result = runRWST findBestRate "KRAKEN STC GDAX USD" outSyncUi2
-  in  property do result === Left ["(KRAKEN, STC) is not entered before"]
+  in  property do result === Left "(KRAKEN, STC) is not entered before"
 
 findBestRate_destNotExists :: Property
 findBestRate_destNotExists = 
-  let result :: Either [Text] (RateEntry, AppState, ())
+  let result :: Either Text (RateEntry, AppState, ())
       result = runRWST findBestRate "KRAKEN USD GDAX STC" outSyncUi2
-  in  property do result === Left ["(GDAX, STC) is not entered before"]
+  in  property do result === Left "(GDAX, STC) is not entered before"
 
 findBestRate_sameUiSameResult :: Property
 findBestRate_sameUiSameResult = 
