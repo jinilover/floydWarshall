@@ -20,6 +20,7 @@ common deps
                       , parsec
                       , protolude
                       , split
+                      , text
                       , time
                       , vector
                       , writer-cps-mtl

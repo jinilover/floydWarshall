@@ -2,7 +2,6 @@ module Main
   (main) where
 
 import Control.Monad.RWS.CPS
-import Data.String (String)
 
 import ProcessRequests (serveReq)
 import Types (AppState(..), DisplayMessage(..))
@@ -20,13 +19,13 @@ userPrompt :: AppState -> IO ()
 userPrompt s = 
   do
     r <- getLine
-    (_, newS, msgs) <- run serveReq (toS r)
+    (_, newS, msgs) <- run serveReq r
     traverse_ putStrLn msgs
     userPrompt newS
   where
-    run :: RWST String DisplayMessage AppState (Either [String]) () 
-          -> String 
-          -> IO ((), AppState, [String])
+    run :: RWST Text DisplayMessage AppState (Either [Text]) () 
+          -> Text 
+          -> IO ((), AppState, [Text])
     run req r = return $ case runRWST req r s of
       Left errs -> ((), s, errs ++ ["\n"])
       Right (_, newS, (DisplayMessage errs [])) -> 

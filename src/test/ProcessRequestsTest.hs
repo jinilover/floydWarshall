@@ -6,7 +6,6 @@ module ProcessRequestsTest
 import Control.Lens
 import Control.Monad.RWS.CPS
 import Data.List (nub)
-import Data.String (String)
 
 import qualified Data.Map as M
 import qualified Data.Set as S
@@ -137,13 +136,13 @@ updateRates_notNewerTs =
 
 findBestRate_srcNotExists :: Property
 findBestRate_srcNotExists = 
-  let result :: Either [String] (RateEntry, AppState, ())
+  let result :: Either [Text] (RateEntry, AppState, ())
       result = runRWST findBestRate "KRAKEN STC GDAX USD" outSyncUi2
   in  property do result === Left ["(KRAKEN, STC) is not entered before"]
 
 findBestRate_destNotExists :: Property
 findBestRate_destNotExists = 
-  let result :: Either [String] (RateEntry, AppState, ())
+  let result :: Either [Text] (RateEntry, AppState, ())
       result = runRWST findBestRate "KRAKEN USD GDAX STC" outSyncUi2
   in  property do result === Left ["(GDAX, STC) is not entered before"]
 

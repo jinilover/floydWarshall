@@ -4,12 +4,11 @@ module Parsers
   where
 
 import Prelude hiding (option)
-import Data.String (String)
 import Text.Read
 import Text.Parsec
-import Text.Parsec.String
+import Text.Parsec.Text
 import Text.Parsec.Error
-import Data.Char
+import Data.Text
 import Data.Time hiding (parseTime)
 
 import Types (Vertex(..))
@@ -27,7 +26,7 @@ exchRatesParser = do
   fwdR <- skipSpaces >> decimal
   bkdR <- skipSpaces >> decimal
   when (fwdR * bkdR > 1.0) $ parserFail ("Product of " ++ show fwdR ++ " and " ++ show bkdR ++ " must be <= 1.0")
-  [exch, src, dest] <- return $ map toUpper <$> [exchS, srcS, destS]
+  [exch, src, dest] <- return $ fmap toUpper [exchS, srcS, destS]
   when (src == dest) $ parserFail "The currencies must be different"
   return (time, Vertex exch src, Vertex exch dest, fwdR, bkdR)
   where
@@ -47,30 +46,30 @@ exchPairParser = do
   srcCcy' <- skipSpaces >> alphabets
   destExch' <- skipSpaces >> alphabets
   destCcy' <- skipSpaces >> alphabets
-  [srcExch, srcCcy, destExch, destCcy] <- return $ map toUpper <$> [srcExch', srcCcy', destExch', destCcy']
+  [srcExch, srcCcy, destExch, destCcy] <- return $ fmap toUpper [srcExch', srcCcy', destExch', destCcy']
   let pair@(src, dest) = (Vertex srcExch srcCcy, Vertex destExch destCcy)
   when (src == dest) $ parserFail "source must be different from destination"
   return pair
 
-alphabets :: Parser String
-alphabets = many1 letter
+alphabets :: Parser Text
+alphabets = many1 letter <&> toS
 
 skipSpaces :: Parser ()
 skipSpaces = skipMany space
 
-parseErrorMsgs :: ParseError -> [String]
-parseErrorMsgs = map interpret . errorMessages
+parseErrorMsgs :: ParseError -> [Text]
+parseErrorMsgs = fmap (toS . interpret) . errorMessages
   where
-    interpret (SysUnExpect s) = "System unexpecting: " ++ s
-    interpret (UnExpect s) = "Unexpecting: " ++ s
-    interpret (Expect s) = "Expecting: " ++ s
-    interpret (Message s) = "General error: " ++ s
+    interpret (SysUnExpect s) = "System unexpecting: " <> s
+    interpret (UnExpect s) = "Unexpecting: " <> s
+    interpret (Expect s) = "Expecting: " <> s
+    interpret (Message s) = "General error: " <> s
 
-parseRates :: String -> Either [String] (UTCTime, Vertex, Vertex, Double, Double)
+parseRates :: Text -> Either [Text] (UTCTime, Vertex, Vertex, Double, Double)
 parseRates = parseOnly exchRatesParser
 
-parseExchPair :: String -> Either [String] (Vertex, Vertex)
+parseExchPair :: Text -> Either [Text] (Vertex, Vertex)
 parseExchPair = parseOnly exchPairParser
 
-parseOnly :: Parser a -> String -> Either [String] a
+parseOnly :: Parser a -> Text -> Either [Text] a
 parseOnly p = first parseErrorMsgs . parse p "regularParse"

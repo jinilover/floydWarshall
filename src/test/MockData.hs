@@ -1,7 +1,6 @@
 module MockData
   where
 
-import Data.String (String)
 import Data.Time.Clock.POSIX
 
 import qualified Data.Set as S
@@ -15,7 +14,7 @@ import Types (Vertex(..))
 
 import TestUtils (rateMatrixForTest)
 
-sampleVertexTuples :: [(String, String)]
+sampleVertexTuples :: [(Text, Text)]
 sampleVertexTuples = 
   [ ("GDAX", "BTC")
   , ("GDAX", "USD")

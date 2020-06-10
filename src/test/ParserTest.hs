@@ -2,7 +2,6 @@ module ParserTest
   ( test_Parser )
   where
 
-import Data.String (String)
 import Data.Time.Clock.POSIX
 
 import Hedgehog
@@ -106,6 +105,6 @@ parseExchPair_ignoreCase :: Property
 parseExchPair_ignoreCase = property do
   parseExchPair "kraken btC Gdax Usd" === Right (kraken_btc, gdax_usd)
 
-expectParseError :: MonadTest m => Either [String] a -> String -> m ()
+expectParseError :: MonadTest m => Either [Text] a -> Text -> m ()
 expectParseError (Left errs) s = assert $ elem s errs
 expectParseError _ _ = failure

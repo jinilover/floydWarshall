@@ -7,7 +7,6 @@ module Types where
 import Control.Lens
 
 import Data.Time
-import Data.String (String)
 
 import qualified Data.Map as M
 import qualified Data.Vector as V
@@ -16,12 +15,12 @@ import qualified Data.Set as S
 -- | `Vertex` composes of the exchange and currency
 data Vertex = 
   Vertex {
-    _exch :: String
-  , _ccy :: String
+    _exch :: Text
+  , _ccy :: Text
   } deriving (Ord, Eq)
 
 instance Show Vertex where
-  show Vertex{..} = "(" ++ _exch ++ ", " ++ _ccy ++ ")"
+  show Vertex{..} = toS $ "(" <> _exch <> ", " <> _ccy <> ")"
 
 -- | Rate entry composes of the best rate, the starting vertex 
 -- and the path taken to achieve that rate.  
@@ -54,8 +53,8 @@ type Matrix a = V.Vector (V.Vector a)
 -- therefore it's a monoid
 data DisplayMessage =
   DisplayMessage {
-    _err :: [String]
-  , _res :: [String]
+    _err :: [Text]
+  , _res :: [Text]
   } deriving (Show, Eq)
 
 instance Semigroup DisplayMessage where

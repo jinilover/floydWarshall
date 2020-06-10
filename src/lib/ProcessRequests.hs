@@ -10,7 +10,6 @@ module ProcessRequests
 import Control.Lens
 import Data.Maybe (isNothing, fromJust)
 import Data.List (last)
-import Data.String (String)
 import Control.Monad.Except (liftEither)
 import Control.Monad.Writer
 
@@ -33,7 +32,7 @@ import Utils (updateMap, updateSet, setToVector)
 -- it will write all the error using `MonadWriter DisplayMessage` that the user doesn't raise any valid request
 -- o.w. it will write the success message using `MonadWriter DisplayMessage`.
 serveReq
-  :: (MonadReader String m, MonadError [String] m, MonadState AppState m, MonadWriter DisplayMessage m)
+  :: (MonadReader Text m, MonadError [Text] m, MonadState AppState m, MonadWriter DisplayMessage m)
   => m ()
 serveReq = 
   catchError updateRatesM \errs -> 
@@ -43,17 +42,17 @@ serveReq =
     updateRatesM = updateRates *> get >>= \s -> 
         let UserInput{..} = userInputFromState s
             msgs = M.toAscList _exchRateTimes <&> \((src, dest), (rate, time)) ->
-                    show src ++ " -- " ++ show rate ++ " " ++ show time ++ " --> " ++ show dest
+                    tshow src <> " -- " <> tshow rate <> " " <> tshow time <> " --> " <> tshow dest
         in  tell mempty {_res = msgs}
     findBestRateM = findBestRate >>= \entry -> tell mempty {_res = presentRateEntry entry}
     presentRateEntry RateEntry{..} = 
       let Vertex srcExch srcCcy = _start
           Vertex destExch destCcy = last _path
-          header = "BEST_RATES_BEGIN " ++ 
-                    srcExch ++ " " ++ srcCcy ++ " " ++ 
-                    destExch ++ " " ++ destCcy ++ " " ++ 
-                    show _bestRate
-          path = show <$> _start : _path
+          header = "BEST_RATES_BEGIN " <> 
+                    srcExch <> " " <> srcCcy <> " " <> 
+                    destExch <> " " <> destCcy <> " " <> 
+                    tshow _bestRate
+          path = tshow <$> _start : _path
           footer = "BEST_RATES_END"
       in  header : path ++ [footer]
 
@@ -63,7 +62,7 @@ serveReq =
 -- if no, run floyd-warshall for an optimised matrix, 
 -- o.w. use the matrix to find the best rate and the exchange nodes involved 
 findBestRate 
-  :: (MonadReader String m, MonadError [String] m, MonadState AppState m)
+  :: (MonadReader Text m, MonadError [Text] m, MonadState AppState m)
   => m RateEntry
 findBestRate =
   do
@@ -84,7 +83,7 @@ findBestRate =
 -- | Parse the exchange nodes, the corresponding rates and the timestamp from
 -- the input string and stores the rates to `AppState` if the timestamp is newer.
 updateRates
-  :: (MonadReader String m, MonadError [String] m, MonadState AppState m)
+  :: (MonadReader Text m, MonadError [Text] m, MonadState AppState m)
   => m ()
 updateRates =
   do

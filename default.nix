@@ -1,6 +1,6 @@
 { mkDerivation, base-noprelude, classy-prelude, containers
 , hedgehog, lens, mtl, parsec, protolude, split, stdenv, tasty
-, tasty-hedgehog, tasty-hunit, time, vector, writer-cps-mtl
+, tasty-hedgehog, tasty-hunit, text, time, vector, writer-cps-mtl
 }:
 mkDerivation {
   pname = "fsm-rwst-parsec-floydWarshall";
@@ -10,15 +10,15 @@ mkDerivation {
   isExecutable = true;
   libraryHaskellDepends = [
     base-noprelude classy-prelude containers lens mtl parsec protolude
-    split time vector writer-cps-mtl
+    split text time vector writer-cps-mtl
   ];
   executableHaskellDepends = [
     base-noprelude classy-prelude containers lens mtl parsec protolude
-    split time vector writer-cps-mtl
+    split text time vector writer-cps-mtl
   ];
   testHaskellDepends = [
     base-noprelude classy-prelude containers hedgehog lens mtl parsec
-    protolude split tasty tasty-hedgehog tasty-hunit time vector
+    protolude split tasty tasty-hedgehog tasty-hunit text time vector
     writer-cps-mtl
   ];
   description = "Apply FloydWarshall algorithm";
