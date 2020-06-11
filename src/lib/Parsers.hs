@@ -4,6 +4,8 @@ module Parsers
   where
 
 import Prelude hiding (option)
+import Control.Lens((#))
+import Control.Monad.Except (liftEither)
 import Control.Monad.Fail (fail)
 import Data.Attoparsec.Text ( Parser
                             , skipSpace
@@ -15,7 +17,7 @@ import Data.Attoparsec.Text ( Parser
 import Data.Text
 import Data.Time (UTCTime, parseTimeM, defaultTimeLocale)
 
-import Types (Vertex(..))
+import Types (Vertex(..), AsParseError(..))
 
 -- | Parse the string for updating exchange rates.  It extracts timestamp,
 -- exchange, source currency, destination currency, forward rate and backward
@@ -55,8 +57,17 @@ exchPairParser = do
 alphabets :: Parser Text
 alphabets = many1 letter <&> toS
 
-parseRates :: Text -> Either Text (UTCTime, Vertex, Vertex, Double, Double)
-parseRates = first toS . parseOnly exchRatesParser
+parseRates 
+  :: (MonadError e m, AsParseError e)
+  => Text -> m (UTCTime, Vertex, Vertex, Double, Double)
+parseRates = simpleParse exchRatesParser
 
-parseExchPair :: Text -> Either Text (Vertex, Vertex)
-parseExchPair = first toS . parseOnly exchPairParser
+parseExchPair 
+  :: (MonadError e m, AsParseError e)
+  => Text -> m (Vertex, Vertex)
+parseExchPair = simpleParse exchPairParser
+
+simpleParse
+  :: (MonadError e m, AsParseError e)
+  => Parser a -> Text -> m a
+simpleParse p = liftEither . first ((_ParseInputError #) . toS) . parseOnly p

@@ -5,11 +5,13 @@ module Algorithms
   )
   where
 
+import Control.Lens((#))
+import Control.Monad.Except (liftEither)
 import Data.Vector as V hiding ((++), any, null)
 
 import qualified Data.Map as M
 
-import Types (RateEntry(..), Matrix, Vertex(..))
+import Types (RateEntry(..), Matrix, Vertex(..), AsAlgoError(..))
 import Utils (isolatedEntry)
 
 -- | Build a matrix of n*n size where n is the size of the `Vertex` vector
@@ -58,9 +60,11 @@ runAlgo k matrix -- k is the number of times to run this algo
 
 -- | Return the best rate and the path 
 -- for the provided `src` and `dest` vertices if it exists
-optimum :: Vertex -> Vertex -> Matrix RateEntry -> Either Text RateEntry
-optimum src dest matrix = 
-  do
+optimum
+  :: (MonadError e m, AsAlgoError e)
+  => Vertex -> Vertex -> Matrix RateEntry -> m RateEntry
+optimum src dest matrix =
+  liftEither . first (_FindOptimumError #) $ do
     when (null matrix || any null matrix) (Left "The matrix is empty")
     let verticalVector = matrix <&> (_start . (! 0))
     srcIdx <- maybeToEither (tshow src <> " is not entered before") $ V.elemIndex src verticalVector

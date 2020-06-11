@@ -23,7 +23,7 @@ userPrompt s =
     traverse_ putStrLn msgs
     userPrompt newS
   where
-    run :: RWST Text DisplayMessage AppState (Either Text) () 
+    run :: RWST Text DisplayMessage AppState (Either AppError) () 
           -> Text 
           -> IO ((), AppState, [Text])
     run req r = return $ case runRWST req r s of

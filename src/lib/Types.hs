@@ -64,3 +64,22 @@ instance Semigroup DisplayMessage where
 
 instance Semigroup DisplayMessage => Monoid DisplayMessage where
   mempty = DisplayMessage [] []
+
+data ParseError = ParseInputError Text
+
+$(makeClassyPrisms ''ParseError)
+
+newtype AlgoError = FindOptimumError Text
+
+$(makeClassyPrisms ''AlgoError)
+
+data AppError = AppParseError ParseError
+              | AppAlgoError AlgoError
+
+$(makeClassyPrisms ''AppError)
+
+instance AsParseError AppError where
+  _ParseError = _AppParseError
+
+instance AsAlgoError AppError where
+  _AlgoError = _AppAlgoError

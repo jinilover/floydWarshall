@@ -18,7 +18,9 @@ import Types (DisplayMessage(..)
             , UserInput(..)
             , exchRateTimes
             , vertices
-            , Vertex(..))
+            , Vertex(..)
+            , AsParseError
+            , AsAlgoError )
 import Algorithms (floydWarshall, buildMatrix, optimum)
 import Parsers (parseRates, parseExchPair)
 import Utils (updateMap, updateSet, setToVector)
@@ -29,10 +31,10 @@ import Utils (updateMap, updateSet, setToVector)
 -- it will write all the error using `MonadWriter DisplayMessage` that the user doesn't raise any valid request
 -- o.w. it will write the success message using `MonadWriter DisplayMessage`.
 serveReq
-  :: (MonadReader Text m, MonadError Text m, MonadState AppState m, MonadWriter DisplayMessage m)
+  :: (MonadReader Text m, MonadError e m, AsParseError e, AsAlgoError e, MonadState AppState m, MonadWriter DisplayMessage m)
   => m ()
 serveReq = 
-  catchError updateRatesM \err -> 
+  catchError updateRatesM \((_ParseInputError #) err) -> 
     tell mempty { _err = [err, "Invalid request to update rates, probably a request for best rate"] } *> 
       catchError findBestRateM \stillErr -> tell mempty { _err = [stillErr] }
   where
@@ -59,7 +61,7 @@ serveReq =
 -- if no, run floyd-warshall for an optimised matrix, 
 -- o.w. use the matrix to find the best rate and the exchange nodes involved 
 findBestRate 
-  :: (MonadReader Text m, MonadError Text m, MonadState AppState m)
+  :: (MonadReader Text m, MonadError e m, AsParseError e, AsAlgoError e, MonadState AppState m)
   => m RateEntry
 findBestRate =
   do
@@ -80,7 +82,7 @@ findBestRate =
 -- | Parse the exchange nodes, the corresponding rates and the timestamp from
 -- the input string and stores the rates to `AppState` if the timestamp is newer.
 updateRates
-  :: (MonadReader Text m, MonadError Text m, MonadState AppState m)
+  :: (MonadReader Text m, MonadError e m, AsParseError e, MonadState AppState m)
   => m ()
 updateRates =
   do
