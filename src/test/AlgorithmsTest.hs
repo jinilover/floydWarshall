@@ -137,6 +137,7 @@ floydWarshall_7x7Matrix =
 
 optimum_srcOrDestNotExist :: Property
 optimum_srcOrDestNotExist = 
+  -- index in matrix first column: gdax_btc = 0, gdax_usd = 1, kraken_btc = 2, kraken_usd = 3 
   let v = setToVector $ S.fromList [kraken_btc, kraken_usd, gdax_usd, gdax_btc]
       matrix = rateMatrixForTest v
         [ [(0, []),         (1001, [3,2,1]), (1001, [3,2]), (1, [3])]
@@ -151,6 +152,7 @@ optimum_srcOrDestNotExist =
 
 optimum_reachability :: Property
 optimum_reachability = 
+  -- index in matrix first column: gdax_btc = 0, gdax_usd = 1, kraken_btc = 2, kraken_usd = 3 
   let v = setToVector $ S.fromList [kraken_btc, kraken_usd, gdax_usd, gdax_btc]
       matrix = rateMatrixForTest v
         [ [(0, []),           (1001, [1]),    (1, [2]),        (1001, [1,3])]
@@ -160,6 +162,9 @@ optimum_reachability =
         ]
       findEntry src dest = optimum src dest matrix
   in  property do
-        (findEntry kraken_usd gdax_btc === Left "There is no exchange between (KRAKEN, USD) and (GDAX, BTC)") *>
+        -- matrix[3][0] is (0, []), so no exchange
+        (findEntry kraken_usd gdax_btc === Left "There is no exchange between (KRAKEN, USD) and (GDAX, BTC)") *> 
+          -- matrix[2][1] is (1001, [0,1])
           (findEntry kraken_btc gdax_usd === Right (RateEntry 1001.0 kraken_btc [gdax_btc, gdax_usd])) *>
+          -- matrix[1][0] is (0.0009, [3,2,0])
           (findEntry gdax_usd gdax_btc === Right (RateEntry 0.0009 gdax_usd [kraken_usd, kraken_btc, gdax_btc]))
