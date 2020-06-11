@@ -135,7 +135,7 @@ floydWarshall_7x7Matrix =
         ]
     in  property do result === expected
 
-optimum' :: Vertex -> Vertex -> V.Vector Vertex -> Matrix RateEntry -> Either AlgoError RateEntry
+optimum' :: Vertex -> Vertex -> Matrix RateEntry -> Either AlgoError RateEntry
 optimum' = optimum
 
 optimum_srcOrDestNotExist :: Property
@@ -164,7 +164,7 @@ optimum_reachability =
         , [(1, [0]),          (1001, [0,1]),  (0, []),         (1001, [0,1,3])]
         , [(0, []),           (1, [1]),       (0.0009, [2]),   (0, [])]
         ]
-      findEntry src dest = optimum'' src dest matrix
+      findEntry src dest = optimum' src dest matrix
   in  property do
         -- matrix[3][0] is (0, []), so no exchange
         (findEntry kraken_usd gdax_btc === Left (AlgoOptimumError "There is no exchange between (KRAKEN, USD) and (GDAX, BTC)")) *>

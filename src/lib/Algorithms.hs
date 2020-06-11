@@ -64,7 +64,7 @@ optimum
   :: (MonadError e m, AsAlgoError e)
   => Vertex -> Vertex -> Matrix RateEntry -> m RateEntry
 optimum src dest matrix =
-  liftEither . first (_FindOptimumError #) $ do
+  liftEither . first (_AlgoOptimumError #) $ do
     when (null matrix || any null matrix) (Left "The matrix is empty")
     let verticalVector = matrix <&> (_start . (! 0))
     srcIdx <- maybeToEither (tshow src <> " is not entered before") $ V.elemIndex src verticalVector
