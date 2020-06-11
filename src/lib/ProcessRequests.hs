@@ -68,7 +68,7 @@ findBestRate =
     s <- get
     let (ui@UserInput{..}, matrix, isStateChanged) = syncMatrix s
     when isStateChanged (put $ InSync ui matrix)
-    liftEither $ optimum src dest (setToVector _vertices) matrix 
+    liftEither $ optimum src dest matrix 
     where
       syncMatrix (OutSync ui@UserInput{..}) =
         let vector = setToVector _vertices

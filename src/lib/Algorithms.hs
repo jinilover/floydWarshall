@@ -17,10 +17,10 @@ import Utils (isolatedEntry)
 -- available from the given map.  This matrix will be applied the
 -- floydWarshall algorithm
 buildMatrix :: M.Map (Vertex, Vertex) Double -> V.Vector Vertex -> Matrix RateEntry
-buildMatrix exRates vertices = buildRow <$> indices
+buildMatrix exRates vertices = indices <&> buildRow
   where
     indices = V.fromList [0 .. V.length vertices - 1]
-    buildRow i = let entry = isolatedEntry (vertices ! i) in buildCol entry <$> indices
+    buildRow i = let entry = isolatedEntry (vertices ! i) in indices <&> buildCol entry
       where
         buildCol entry@(RateEntry _ vtxI _) j
           | i == j = entry -- i is row number, j is column number
@@ -58,11 +58,13 @@ runAlgo k matrix -- k is the number of times to run this algo
 
 -- | Return the best rate and the path 
 -- for the provided `src` and `dest` vertices if it exists
-optimum :: Vertex -> Vertex -> V.Vector Vertex -> Matrix RateEntry -> Either Text RateEntry
-optimum src dest vector matrix = 
+optimum :: Vertex -> Vertex -> Matrix RateEntry -> Either Text RateEntry
+optimum src dest matrix = 
   do
-    srcIdx <- maybeToEither (tshow src <> " is not entered before") $ V.elemIndex src vector
-    destIdx <- maybeToEither (tshow dest <> " is not entered before") $ V.elemIndex dest vector
+    when (null matrix || any null matrix) (Left "The matrix is empty")
+    let verticalVector = matrix <&> (_start . (! 0))
+    srcIdx <- maybeToEither (tshow src <> " is not entered before") $ V.elemIndex src verticalVector
+    destIdx <- maybeToEither (tshow dest <> " is not entered before") $ V.elemIndex dest verticalVector
     let entry@RateEntry{..} = matrix ! srcIdx ! destIdx
     if null _path 
       then Left $ "There is no exchange between " <> tshow src <> " and " <> tshow dest 

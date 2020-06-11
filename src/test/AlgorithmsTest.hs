@@ -144,7 +144,7 @@ optimum_srcOrDestNotExist =
         , [(0.0009, [1,0]), (1, [1]),        (0, []),       (0.0009, [1,0,3])]
         , [(1, [0]),        (1001, [2,1]),   (1001, [2]),   (0, [])]
         ]
-      findEntry src dest = optimum src dest v matrix
+      findEntry src dest = optimum src dest matrix
   in  property do
         (findEntry kraken_stc kraken_usd === Left "(KRAKEN, STC) is not entered before") *>
           (findEntry kraken_btc kraken_stc === Left "(KRAKEN, STC) is not entered before")
@@ -158,7 +158,7 @@ optimum_reachability =
         , [(1, [0]),          (1001, [0,1]),  (0, []),         (1001, [0,1,3])]
         , [(0, []),           (1, [1]),       (0.0009, [2]),   (0, [])]
         ]
-      findEntry src dest = optimum src dest v matrix
+      findEntry src dest = optimum src dest matrix
   in  property do
         (findEntry kraken_usd gdax_btc === Left "There is no exchange between (KRAKEN, USD) and (GDAX, BTC)") *>
           (findEntry kraken_btc gdax_usd === Right (RateEntry 1001.0 kraken_btc [gdax_btc, gdax_usd])) *>
