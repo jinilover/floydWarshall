@@ -37,7 +37,7 @@ data UserInput =
   , _vertices :: S.Set Vertex
   } deriving (Show, Eq)
 
-$(makeLenses ''UserInput)
+makeLenses ''UserInput
 
 -- | AppState which represents whether the matrix of the best rates are in-sync
 -- with the UserInput.  This applies the idea of FSM.
