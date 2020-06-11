@@ -4,7 +4,7 @@ module Main
 import Control.Monad.RWS.CPS
 
 import ProcessRequests (serveReq)
-import Types (AppState(..), DisplayMessage(..))
+import Types (AppState(..), DisplayMessage(..), AppError(..), ParseError(..), AlgoError(..))
 import Utils (blankState)
 
 main :: IO ()
@@ -27,7 +27,11 @@ userPrompt s =
           -> Text 
           -> IO ((), AppState, [Text])
     run req r = return $ case runRWST req r s of
-      Left err -> ((), s, [err, ""])
+      Left (AppParseError (ParseInputError err)) -> 
+        ((), s, [err, ""])
+      Left (AppAlgoError (AlgoOptimumError err)) -> 
+        ((), s, [err, ""])
       Right (_, newS, (DisplayMessage errs [])) -> 
         ((), newS, errs ++ ["You neither enter exchange rates or request best rate, please enter a valid input\n"])
-      Right (_, newS, (DisplayMessage _ res)) -> ((), newS, res ++ [""]) 
+      Right (_, newS, (DisplayMessage _ res)) -> 
+        ((), newS, res ++ [""]) 

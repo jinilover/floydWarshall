@@ -11,7 +11,7 @@ import Test.Tasty
 import Test.Tasty.Hedgehog
 
 import Algorithms (buildMatrix, floydWarshall, optimum)
-import Types (RateEntry(..))
+import Types (RateEntry(..), Vertex, Matrix, AlgoError(..))
 import Utils (setToVector)
 
 import MockData ( gdax_btc
@@ -135,9 +135,12 @@ floydWarshall_7x7Matrix =
         ]
     in  property do result === expected
 
+optimum' :: Vertex -> Vertex -> V.Vector Vertex -> Matrix RateEntry -> Either AlgoError RateEntry
+optimum' = optimum
+
 optimum_srcOrDestNotExist :: Property
 optimum_srcOrDestNotExist = 
-  -- index in matrix first column: gdax_btc = 0, gdax_usd = 1, kraken_btc = 2, kraken_usd = 3 
+  -- index in matrix first column: gdax_btc = 0, gdax_usd = 1, kraken_btc = 2, kraken_usd = 3
   let v = setToVector $ S.fromList [kraken_btc, kraken_usd, gdax_usd, gdax_btc]
       matrix = rateMatrixForTest v
         [ [(0, []),         (1001, [3,2,1]), (1001, [3,2]), (1, [3])]
@@ -145,14 +148,15 @@ optimum_srcOrDestNotExist =
         , [(0.0009, [1,0]), (1, [1]),        (0, []),       (0.0009, [1,0,3])]
         , [(1, [0]),        (1001, [2,1]),   (1001, [2]),   (0, [])]
         ]
-      findEntry src dest = optimum src dest matrix
+      findEntry src dest = optimum' src dest matrix
+      expected = Left $ AlgoOptimumError "(KRAKEN, STC) is not entered before"
   in  property do
-        (findEntry kraken_stc kraken_usd === Left "(KRAKEN, STC) is not entered before") *>
-          (findEntry kraken_btc kraken_stc === Left "(KRAKEN, STC) is not entered before")
+        (findEntry kraken_stc kraken_usd === expected) *>
+          (findEntry kraken_btc kraken_stc === expected)
 
 optimum_reachability :: Property
 optimum_reachability = 
-  -- index in matrix first column: gdax_btc = 0, gdax_usd = 1, kraken_btc = 2, kraken_usd = 3 
+  -- index in matrix first column: gdax_btc = 0, gdax_usd = 1, kraken_btc = 2, kraken_usd = 3
   let v = setToVector $ S.fromList [kraken_btc, kraken_usd, gdax_usd, gdax_btc]
       matrix = rateMatrixForTest v
         [ [(0, []),           (1001, [1]),    (1, [2]),        (1001, [1,3])]
@@ -160,10 +164,10 @@ optimum_reachability =
         , [(1, [0]),          (1001, [0,1]),  (0, []),         (1001, [0,1,3])]
         , [(0, []),           (1, [1]),       (0.0009, [2]),   (0, [])]
         ]
-      findEntry src dest = optimum src dest matrix
+      findEntry src dest = optimum'' src dest matrix
   in  property do
         -- matrix[3][0] is (0, []), so no exchange
-        (findEntry kraken_usd gdax_btc === Left "There is no exchange between (KRAKEN, USD) and (GDAX, BTC)") *> 
+        (findEntry kraken_usd gdax_btc === Left (AlgoOptimumError "There is no exchange between (KRAKEN, USD) and (GDAX, BTC)")) *>
           -- matrix[2][1] is (1001, [0,1])
           (findEntry kraken_btc gdax_usd === Right (RateEntry 1001.0 kraken_btc [gdax_btc, gdax_usd])) *>
           -- matrix[1][0] is (0.0009, [3,2,0])

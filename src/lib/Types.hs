@@ -1,9 +1,9 @@
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -fno-warn-overlapping-patterns #-}
 
 module Types where
 
 import Control.Lens
-
 import Data.Time
 
 import qualified Data.Map as M
@@ -65,18 +65,21 @@ instance Semigroup DisplayMessage where
 instance Semigroup DisplayMessage => Monoid DisplayMessage where
   mempty = DisplayMessage [] []
 
-data ParseError = ParseInputError Text
+data ParseError = ParseInputError Text 
+                  deriving (Show, Eq)
 
-$(makeClassyPrisms ''ParseError)
+makeClassyPrisms ''ParseError
 
-newtype AlgoError = FindOptimumError Text
+newtype AlgoError = AlgoOptimumError Text
+                    deriving (Show, Eq)
 
-$(makeClassyPrisms ''AlgoError)
+makeClassyPrisms ''AlgoError
 
 data AppError = AppParseError ParseError
               | AppAlgoError AlgoError
+              deriving (Show, Eq)
 
-$(makeClassyPrisms ''AppError)
+makeClassyPrisms ''AppError
 
 instance AsParseError AppError where
   _ParseError = _AppParseError

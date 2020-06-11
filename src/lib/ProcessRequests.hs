@@ -19,8 +19,8 @@ import Types (DisplayMessage(..)
             , exchRateTimes
             , vertices
             , Vertex(..)
-            , AsParseError
-            , AsAlgoError )
+            , AsParseError(..)
+            , AsAlgoError(..))
 import Algorithms (floydWarshall, buildMatrix, optimum)
 import Parsers (parseRates, parseExchPair)
 import Utils (updateMap, updateSet, setToVector)
@@ -34,19 +34,28 @@ serveReq
   :: (MonadReader Text m, MonadError e m, AsParseError e, AsAlgoError e, MonadState AppState m, MonadWriter DisplayMessage m)
   => m ()
 serveReq = 
-  catchError updateRatesM \((_ParseInputError #) err) -> 
-    tell mempty { _err = [err, "Invalid request to update rates, probably a request for best rate"] } *> 
-      catchError findBestRateM \stillErr -> tell mempty { _err = [stillErr] }
+  catchError updateRatesM (\err1 ->
+    let maybeErr1 = err1 ^? _ParseInputError
+        nextReqMsg = "Invalid request to update rates, probably a request for best rate"
+    in  when (isJust maybeErr1) $ tell mempty { _err = [fromJust maybeErr1, nextReqMsg] } *> 
+          catchError findBestRateM (\err2 ->
+            let maybeErr2 = err2 ^? _ParseInputError <|> err2 ^? _AlgoOptimumError
+            in  when (isJust maybeErr2) $ tell mempty {_err = [fromJust maybeErr2]}
+          )
+  )
   where
+    -- `updateRatesM` writes the state updated by `updateRates` to `MonadWriter`
     updateRatesM = updateRates *> get >>= \s -> 
         let UserInput{..} = userInputFromState s
             msgs = M.toAscList _exchRateTimes <&> \((src, dest), (rate, time)) ->
                     tshow src <> " -- " <> tshow rate <> " " <> tshow time <> " --> " <> tshow dest
         in  tell mempty {_res = msgs}
+    -- `findBestRateM` writes the `RateEntry` returned by `findBestRate` to `MonadWriter`
     findBestRateM = findBestRate >>= \entry -> tell mempty {_res = presentRateEntry entry}
     presentRateEntry RateEntry{..} = 
       let Vertex srcExch srcCcy = _start
-          Vertex destExch destCcy = last _path
+          -- safe to use `last` here because it's returned from `findBestRate` which calls `optimum`
+          Vertex destExch destCcy = last _path 
           header = "BEST_RATES_BEGIN " <> 
                     srcExch <> " " <> srcCcy <> " " <> 
                     destExch <> " " <> destCcy <> " " <> 

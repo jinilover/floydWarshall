@@ -20,7 +20,10 @@ import Types (UserInput(..)
             , vertices
             , RateEntry(..)
             , AppState(..)
-            , DisplayMessage(..))
+            , DisplayMessage(..)
+            , AppError(..)
+            , ParseError(..)
+            , AlgoError(..))
 import Utils (updateMap, updateSet, blankState, setToVector)
 
 import MockData ( gdax_btc
@@ -59,6 +62,9 @@ test_ProcessRequests = testGroup "ProcessRequests"
     ]
   ]
 
+serveReq' :: RWST Text DisplayMessage AppState (Either AppError) ()
+serveReq' = serveReq
+
 serveReq_bothInvalid :: Property
 serveReq_bothInvalid = 
   let err = [ "Failed reading: parseTimeM: no parse of \"2017-11-0109:42:23+00:00\""
@@ -67,7 +73,7 @@ serveReq_bothInvalid =
       states = [inSyncUi2, outSyncUi2] 
       expected = Right $ states <&> ((), , mempty {_err = err})
       result = flip traverse states $ 
-                runRWST serveReq "2017-11-0109:42:23+00:00 KRAKEN BTC USD 1000.0 0.0009"
+                runRWST serveReq' "2017-11-0109:42:23+00:00 KRAKEN BTC USD 1000.0 0.0009"
   in  property do result === expected
 
 serveReq_updateRates :: Property
@@ -75,7 +81,7 @@ serveReq_updateRates =
   let res = [ "(KRAKEN, BTC) -- 1000.0 2017-11-01 09:42:23 UTC --> (KRAKEN, USD)"
             , "(KRAKEN, USD) -- 9.0e-4 2017-11-01 09:42:23 UTC --> (KRAKEN, BTC)" ]
       expected = Right ((), outSyncUi1, mempty {_res = res})
-      result = runRWST serveReq "2017-11-01T09:42:23+00:00 KRAKEN BTC USD 1000.0 0.0009" blankState
+      result = runRWST serveReq' "2017-11-01T09:42:23+00:00 KRAKEN BTC USD 1000.0 0.0009" blankState
   in  property do result === expected
 
 serveReq_findBestRate :: Property
@@ -89,19 +95,25 @@ serveReq_findBestRate =
             , "(KRAKEN, USD)"
             , "BEST_RATES_END" ]
       expected = Right ((), inSyncUi2, mempty {_err = err, _res = res})
-      result = runRWST serveReq "KRAKEN BTC KRAKEN USD" outSyncUi2
+      result = runRWST serveReq' "KRAKEN BTC KRAKEN USD" outSyncUi2
   in  property do result === expected
+
+-- just for info, `updateRates` can be 
+-- ReaderT Text (StateT AppState (ExceptT ParseError Identity)) ()
+-- but `RWST` is simpler
+updateRates' :: RWST Text () AppState (Either ParseError) ()
+updateRates' = updateRates
 
 updateRates_addRateToEmptyState :: Property
 updateRates_addRateToEmptyState = property do
-  runRWST updateRates "2017-11-01T09:42:23+00:00 KRAKEN BTC USD 1000.0 0.0009" blankState
+  runRWST updateRates' "2017-11-01T09:42:23+00:00 KRAKEN BTC USD 1000.0 0.0009" blankState
     === Right ((), outSyncUi1, ())
 
 updateRates_turnStateOutSync :: Property
 updateRates_turnStateOutSync = 
   let origStates = [inSyncUi1, outSyncUi1] -- no matter it's originally `InSync` or `OutSync`
       result = flip traverse origStates $ 
-                runRWST updateRates "2017-11-01T09:43:23+00:00 GDAX BTC USD 1001.0 0.0008"
+                runRWST updateRates' "2017-11-01T09:43:23+00:00 GDAX BTC USD 1001.0 0.0008"
       s = OutSync $ ui1 & exchRateTimes %~ updateMap [gdax_btc_usd, gdax_usd_btc]
                         & vertices %~ updateSet [gdax_btc, gdax_usd]
       expected = Right $ replicate 2 ((), s, ())
@@ -113,7 +125,7 @@ updateRates_onlyUpdateByNewerTs =
       -- those of `_exchRates` in the orig state and the update is case insensitive
       inputStrings =  [ "2017-11-01T09:42:24+00:00 KRAKEN USD BTC 0.00089 1001.1"
                       , "2017-11-01T09:42:24+00:00 kraken usd btc 0.00089 1001.1"]
-      result = flip traverse inputStrings \r -> runRWST updateRates r outSyncUi2
+      result = flip traverse inputStrings \r -> runRWST updateRates' r outSyncUi2
       s = OutSync $ ui2 & exchRateTimes %~ updateMap [ ((kraken_btc, kraken_usd), (1001.1, d2017_11_01t09_42_24))
                                                  , ((kraken_usd, kraken_btc), (0.00089, d2017_11_01t09_42_24)) ]
       expected = Right $ replicate 2 ((), s, ())
@@ -124,27 +136,29 @@ updateRates_notNewerTs =
   let inputStrings =  [ "2017-11-01T09:42:20+00:00 KRAKEN USD BTC 0.00089 1001.1"
                       , "2017-11-01T09:42:23+00:00 KRAKEN USD BTC 0.00089 1001.1" ] 
       origStates = [inSyncUi1, outSyncUi1]
-      result = sequence . nub $ runRWST updateRates <$> inputStrings <*> origStates
+      result = sequence . nub $ runRWST updateRates' <$> inputStrings <*> origStates
       expected = Right (origStates <&> ((), , ()))
   in  property do result === expected
 
+findBestRate' :: RWST Text () AppState (Either AppError) RateEntry
+findBestRate' = findBestRate
+
 findBestRate_srcNotExists :: Property
 findBestRate_srcNotExists = 
-  let result :: Either Text (RateEntry, AppState, ())
-      result = runRWST findBestRate "KRAKEN STC GDAX USD" outSyncUi2
-  in  property do result === Left "(KRAKEN, STC) is not entered before"
+  let result = runRWST findBestRate' "KRAKEN STC GDAX USD" outSyncUi2
+      expected = Left . AppAlgoError . AlgoOptimumError $ "(KRAKEN, STC) is not entered before"
+  in  property do result === expected
 
 findBestRate_destNotExists :: Property
 findBestRate_destNotExists = 
-  let result :: Either Text (RateEntry, AppState, ())
-      result = runRWST findBestRate "KRAKEN USD GDAX STC" outSyncUi2
-  in  property do result === Left "(GDAX, STC) is not entered before"
+  let result = runRWST findBestRate' "KRAKEN USD GDAX STC" outSyncUi2
+      expected = Left . AppAlgoError . AlgoOptimumError $ "(GDAX, STC) is not entered before"
+  in  property do result === expected
 
 findBestRate_sameUiSameResult :: Property
 findBestRate_sameUiSameResult = 
   let origStates = [inSyncUi2, outSyncUi2] 
-      result = flip traverse origStates $
-                runRWST findBestRate "KRAKEN BTC KRAKEN USD"
+      result = flip traverse origStates $ runRWST findBestRate' "KRAKEN BTC KRAKEN USD"
       _bestRate = 1001.0
       _start = kraken_btc
       _path = [gdax_btc, gdax_usd, kraken_usd]
