@@ -1,5 +1,5 @@
 cabal-version:          2.2
-name:                   fsm-rwst-parsec-floydWarshall
+name:                   floydWarshall
 version:                0.1.0.0
 synopsis:               Apply FloydWarshall algorithm
 build-type:             Simple
@@ -10,6 +10,10 @@ common lang
   default-extensions: OverloadedStrings
                     , RecordWildCards
                     , BlockArguments
+                    , FlexibleContexts
+                    , TupleSections
+                    , TemplateHaskell
+
 
 common deps
   build-depends:        base-noprelude
@@ -37,16 +41,16 @@ library
   ghc-options:          -Wall -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints
   default-language:     Haskell2010
   
-executable fsm-rwst-parsec-floydWarshall
+executable floydWarshall
   import:               lang, deps
   main-is:              Main.hs
   hs-source-dirs:       src/app
   default-language:     Haskell2010
   ghc-options:          -Wall -threaded
-  build-depends:        fsm-rwst-parsec-floydWarshall
+  build-depends:        floydWarshall
 
 common test-deps
-  build-depends:      fsm-rwst-parsec-floydWarshall
+  build-depends:      floydWarshall
                     , hedgehog
                     , tasty
                     , tasty-hedgehog

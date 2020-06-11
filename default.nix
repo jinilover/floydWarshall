@@ -3,7 +3,7 @@
 , tasty-hedgehog, tasty-hunit, text, time, vector, writer-cps-mtl
 }:
 mkDerivation {
-  pname = "fsm-rwst-parsec-floydWarshall";
+  pname = "floydWarshall";
   version = "0.1.0.0";
   src = ./.;
   isLibrary = true;

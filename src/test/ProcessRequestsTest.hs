@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 module ProcessRequestsTest 
   ( test_ProcessRequests )
   where

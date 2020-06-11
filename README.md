@@ -22,7 +22,7 @@ E.g.
 ```
 For the same currency across different exchanges, 1.0 is assigned to the connecting edge.  The following graph is formed.
 
-![Alt text](https://github.com/jinilover/fsm-rwst-parsec-floydWarshall/blob/master/GraphOfExchanges.png)
+![Alt text](https://github.com/jinilover/floydWarshall/blob/master/GraphOfExchanges.png)
 
 ### User input for the best rate
 The input format is:
@@ -50,14 +50,14 @@ BEST_RATES_END
 * `AppState` which is either `InSync` or `OutSync`.  It applies the FSM concept.  `InSync` means the matrix is optimized with the latest `UserInput`.  When the `UserInput` is updated with the price update request, the matrix is no longer valid such that it should update `AppState` as `OutSync`.  In processing the best rate request, it uses the `AppState` to decide whether it should re-run the algorithm to optimize the matrix.  If it is `InSync`, it will not waste the time to re-run the algorithm.  Otherwise, it will re-run the algorithm and update `AppState` as `InSync`.
 
 ## Build application
-* Under `fsm-rwst-parsec-floydWarshall` folder, run `stack build`
+* Under `floydWarshall` folder, run `stack build`
 
 ## Run application
-* Under `fsm-rwst-parsec-floydWarshall` folder, run `stack exec fsm-rwst-parsec-floydWarshall`
+* Under `floydWarshall` folder, run `stack exec floydWarshall`
 * Please refer to the "Appendix" section for details.
 
 ## Run unit-tests
-* Under `fsm-rwst-parsec-floydWarshall` folder, run `stack build fsm-rwst-parsec-floydWarshall\:test\:fsm-rwst-parsec-floydWarshall-test`, it should run the tests as follows
+* Under `floydWarshall` folder, run `stack build floydWarshall\:test\:floydWarshall-test`, it should run the tests as follows
 
 ```
 setToMapVectorSpec
@@ -114,7 +114,7 @@ Finished in 0.0178 seconds
 ## Appendix
 Sample input, besides displaying the required information for the best rate and the vertices involved, it will display error messages of invalid input, latest exchange rates to make sure the application run correctly.
 ```
-stack exec fsm-rwst-parsec-floydWarshall-exe 
+stack exec floydWarshall-exe 
 2017-11-01T09:42:23+00:00 KRAKEN BTC USD 1000.0 0.434d
 System unexpecting: "d"
 Expecting: digit

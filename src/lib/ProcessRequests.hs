@@ -1,6 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TupleSections #-}
-
 module ProcessRequests
   ( serveReq
   , findBestRate
