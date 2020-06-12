@@ -10,7 +10,7 @@ updateMap :: Ord k => [(k, v)] -> M.Map k v -> M.Map k v
 updateMap = flip $ foldl (\m (k, v) -> M.insert k v m)
 
 updateSet :: Ord v => [v] -> S.Set v -> S.Set v
-updateSet = flip . foldl . flip $ S.insert
+updateSet = flip . foldr $ S.insert
 
 -- | Create a `RateEntry` for a vertex that has no exchange rate 
 -- with any other exchange yet
