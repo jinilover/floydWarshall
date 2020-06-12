@@ -66,6 +66,5 @@ test-suite tests
                     , ParserTest
                     , ProcessRequestsTest
                     , TestUtils
-                    , UtilsTest
   default-language:   Haskell2010
   ghc-options:        -Wall -threaded

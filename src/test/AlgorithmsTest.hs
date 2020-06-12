@@ -24,7 +24,9 @@ import MockData ( gdax_btc
                 , kraken_btc_usd
                 , kraken_usd_btc
                 , gdax_btc_usd
-                , gdax_usd_btc )
+                , gdax_usd_btc
+                , genVertex
+                , genRateMatrix )
 import TestUtils (rateMatrixForTest, listsToMatrix)
 
 test_Algorithms :: TestTree
@@ -39,7 +41,8 @@ test_Algorithms = testGroup "Algorithms"
     , testProperty "handle 7*7 matrix" floydWarshall_7x7Matrix ]
   , testGroup "optimum"
     [ testProperty "src or dest not exists in the graph" optimum_srcOrDestNotExist 
-    , testProperty "handle if it's reachable or not between src and dest" optimum_reachability]
+    , testProperty "handle if it's reachable or not between src and dest" optimum_reachability
+    , testProperty "the matrix may have no row or each row is empty" optimum_matrixMaybeEmpty ]
   ]
 
 buildMatrix_emptyMatrix :: Property
@@ -172,3 +175,27 @@ optimum_reachability =
           (findEntry kraken_btc gdax_usd === Right (RateEntry 1001.0 kraken_btc [gdax_btc, gdax_usd])) *>
           -- matrix[1][0] is (0.0009, [3,2,0])
           (findEntry gdax_usd gdax_btc === Right (RateEntry 0.0009 gdax_usd [kraken_usd, kraken_btc, gdax_btc]))
+
+optimum_matrixMaybeEmpty :: Property
+optimum_matrixMaybeEmpty = property do
+  src <- forAll genVertex
+  dest <- forAll genVertex
+  matrix <- forAll genRateMatrix
+  let result = optimum' src dest matrix
+  checkResult result src dest matrix
+  where
+    checkResult result src dest matrix
+      | V.null matrix = 
+          result === Left (AlgoOptimumError $ tshow src <> " is not entered before")
+      | any null matrix = 
+          result === Left (AlgoOptimumError "The matrix is empty")
+      | not (contains src matrix) = 
+          result === Left (AlgoOptimumError $ tshow src <> " is not entered before")
+      | not (contains dest matrix) = 
+          result === Left (AlgoOptimumError $ tshow dest <> " is not entered before")
+      | src == dest = 
+          result === Left (AlgoOptimumError $ "There is no exchange between " <> tshow src <> " and " <> tshow dest)
+      | otherwise = 
+          result === Right (RateEntry 1.0 src [dest])
+    contains vertex matrix = flip any matrix \row -> 
+                              flip any row \RateEntry{..} -> _start == vertex

@@ -65,11 +65,12 @@ optimum
   => Vertex -> Vertex -> Matrix RateEntry -> m RateEntry
 optimum src dest matrix =
   liftEither . first (_AlgoOptimumError #) $ do
-    when (null matrix || any null matrix) (Left "The matrix is empty")
-    let verticalVector = matrix <&> (_start . (! 0))
-    srcIdx <- maybeToEither (tshow src <> " is not entered before") $ V.elemIndex src verticalVector
-    destIdx <- maybeToEither (tshow dest <> " is not entered before") $ V.elemIndex dest verticalVector
-    let entry@RateEntry{..} = matrix ! srcIdx ! destIdx
-    if null _path 
-      then Left $ "There is no exchange between " <> tshow src <> " and " <> tshow dest 
-      else Right entry
+    let maybeVector = flip traverse matrix $ (fmap _start) . (!? 0)
+    verticalVertices <- maybeToEither "The matrix is empty" maybeVector
+    srcIdx <- verticeIdx src verticalVertices
+    destIdx <- verticeIdx dest verticalVertices
+    entry@RateEntry{..} <- maybeToEither notReachable $ matrix !? srcIdx >>= (!? destIdx)
+    if null _path then Left notReachable else Right entry
+  where
+    verticeIdx vertex v = maybeToEither (tshow vertex <> " is not entered before") $ V.elemIndex vertex v
+    notReachable = "There is no exchange between " <> tshow src <> " and " <> tshow dest 
