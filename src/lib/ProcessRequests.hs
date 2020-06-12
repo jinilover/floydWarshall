@@ -11,6 +11,8 @@ import Control.Monad.Except (liftEither)
 import Control.Monad.Writer
 
 import qualified Data.Map as M
+import qualified Data.Set as S
+import qualified Data.Vector as V
 
 import Types (DisplayMessage(..)
             , AppState(..)
@@ -23,7 +25,7 @@ import Types (DisplayMessage(..)
             , AsAlgoError(..))
 import Algorithms (floydWarshall, buildMatrix, optimum)
 import Parsers (parseRates, parseExchPair)
-import Utils (updateMap, updateSet, setToVector)
+import Utils (updateMap, updateSet)
 
 -- | It doesn't know which request the user is asking for,
 -- therefore it call `updateRates` first, if it encounters error, 
@@ -82,7 +84,7 @@ findBestRate =
     liftEither $ optimum src dest matrix 
     where
       syncMatrix (OutSync ui@UserInput{..}) =
-        let vector = setToVector _vertices
+        let vector = V.fromList . S.toList $ _vertices
             exchRates = M.map fst _exchRateTimes
             syncdMatrix = floydWarshall $ buildMatrix exchRates vector
         in  (ui, syncdMatrix, True)

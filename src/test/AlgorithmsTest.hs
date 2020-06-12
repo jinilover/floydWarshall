@@ -3,7 +3,6 @@ module AlgorithmsTest
   where
 
 import qualified Data.Map as M
-import qualified Data.Set as S
 import qualified Data.Vector as V
 
 import Hedgehog
@@ -12,7 +11,7 @@ import Test.Tasty.Hedgehog
 
 import Algorithms (buildMatrix, floydWarshall, optimum)
 import Types (RateEntry(..), Vertex, Matrix, AlgoError(..))
-import Utils (setToVector)
+import Utils (isolatedEntry)
 
 import MockData ( gdax_btc
                 , gdax_usd
@@ -21,7 +20,11 @@ import MockData ( gdax_btc
                 , bittrex_usd
                 , kraken_btc
                 , kraken_stc
-                , kraken_usd )
+                , kraken_usd
+                , kraken_btc_usd
+                , kraken_usd_btc
+                , gdax_btc_usd
+                , gdax_usd_btc )
 import TestUtils (rateMatrixForTest, listsToMatrix)
 
 test_Algorithms :: TestTree
@@ -140,14 +143,10 @@ optimum' = optimum
 
 optimum_srcOrDestNotExist :: Property
 optimum_srcOrDestNotExist = 
-  -- index in matrix first column: gdax_btc = 0, gdax_usd = 1, kraken_btc = 2, kraken_usd = 3
-  let v = setToVector $ S.fromList [kraken_btc, kraken_usd, gdax_usd, gdax_btc]
-      matrix = rateMatrixForTest v
-        [ [(0, []),         (1001, [3,2,1]), (1001, [3,2]), (1, [3])]
-        , [(0.0009, [0]),   (0, []),         (1, [2]),      (0.0009, [0,3])]
-        , [(0.0009, [1,0]), (1, [1]),        (0, []),       (0.0009, [1,0,3])]
-        , [(1, [0]),        (1001, [2,1]),   (1001, [2]),   (0, [])]
-        ]
+  -- index in matrix first column: kraken_btc = 0, kraken_usd = 1, gdax_usd = 2, gdax_btc = 3
+  let v = V.fromList [kraken_btc, kraken_usd, gdax_usd, gdax_btc]
+      exchRates = M.fromList [kraken_btc_usd, kraken_usd_btc, gdax_btc_usd, gdax_usd_btc] <&> fst
+      matrix = floydWarshall $ buildMatrix exchRates v
       findEntry src dest = optimum' src dest matrix
       expected = Left $ AlgoOptimumError "(KRAKEN, STC) is not entered before"
   in  property do
@@ -157,14 +156,15 @@ optimum_srcOrDestNotExist =
 optimum_reachability :: Property
 optimum_reachability = 
   -- index in matrix first column: gdax_btc = 0, gdax_usd = 1, kraken_btc = 2, kraken_usd = 3
-  let v = setToVector $ S.fromList [kraken_btc, kraken_usd, gdax_usd, gdax_btc]
-      matrix = rateMatrixForTest v
-        [ [(0, []),           (1001, [1]),    (1, [2]),        (1001, [1,3])]
-        , [(0.0009, [3,2,0]), (0, []),        (0.0009, [3,2]), (1, [3])]
-        , [(1, [0]),          (1001, [0,1]),  (0, []),         (1001, [0,1,3])]
-        , [(0, []),           (1, [1]),       (0.0009, [2]),   (0, [])]
-        ]
-      findEntry src dest = optimum' src dest matrix
+  let v = V.fromList [gdax_btc, gdax_usd, kraken_btc, kraken_usd]
+      exchRates = M.fromList [kraken_btc_usd, kraken_usd_btc, gdax_btc_usd, gdax_usd_btc] <&> fst
+      -- built the optimised 4*4 matrix
+      matrix = floydWarshall (buildMatrix exchRates v)
+      lastRow = V.last matrix
+      lastRow' = V.cons (isolatedEntry kraken_usd) (V.tail lastRow)
+      -- by purpose set matrix[3][0] to be isolated to test if `optimum` check the reachability
+      matrix' = V.take 3 matrix V.++ V.singleton lastRow'
+      findEntry src dest = optimum' src dest matrix'
   in  property do
         -- matrix[3][0] is (0, []), so no exchange
         (findEntry kraken_usd gdax_btc === Left (AlgoOptimumError "There is no exchange between (KRAKEN, USD) and (GDAX, BTC)")) *>

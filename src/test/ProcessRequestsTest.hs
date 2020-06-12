@@ -8,6 +8,7 @@ import Data.List (nub)
 
 import qualified Data.Map as M
 import qualified Data.Set as S
+import qualified Data.Vector as V
 
 import Hedgehog
 import Test.Tasty
@@ -24,7 +25,7 @@ import Types (UserInput(..)
             , AppError(..)
             , ParseError(..)
             , AlgoError(..))
-import Utils (updateMap, updateSet, blankState, setToVector)
+import Utils (updateMap, updateSet, blankState)
 
 import MockData ( gdax_btc
                 , gdax_usd
@@ -180,7 +181,7 @@ ui2 = ui1 & exchRateTimes %~ updateMap [gdax_btc_usd, gdax_usd_btc]
 
 inSync :: UserInput -> AppState
 inSync ui@UserInput{..} = 
-  let vector = setToVector _vertices
+  let vector = V.fromList . S.toList $ _vertices
       exchRates = M.map fst _exchRateTimes
       matrix = floydWarshall $ buildMatrix exchRates vector
   in  InSync ui matrix
