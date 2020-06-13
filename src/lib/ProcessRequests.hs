@@ -15,15 +15,13 @@ import qualified Data.Map as M
 import Types (DisplayMessage(..)
             , AppState(..)
             , RateEntry(..)
-            , UserInput(..)
-            , exchRateTimes
-            , vertices
             , Vertex(..)
             , AsParseError(..)
-            , AsAlgoError(..))
+            , AsAlgoError(..)
+            , ExchRateTimes)
 import Algorithms (floydWarshall, optimum)
 import Parsers (parseRates, parseExchPair)
-import Utils (updateMap, updateSet)
+import Utils (updateMap)
 
 -- | It doesn't know which request the user is asking for,
 -- therefore it call `updateRates` first, if it encounters error, 
@@ -46,8 +44,8 @@ serveReq =
   where
     -- `updateRatesM` writes the state updated by `updateRates` to `MonadWriter`
     updateRatesM = updateRates *> get >>= \s -> 
-        let UserInput{..} = userInputFromState s
-            msgs = M.toAscList _exchRateTimes <&> \((src, dest), (rate, time)) ->
+        let exRates = exchRateTimesFromState s
+            msgs = M.toAscList exRates <&> \((src, dest), (rate, time)) ->
                     tshow src <> " -- " <> tshow rate <> " " <> tshow time <> " --> " <> tshow dest
         in  tell mempty {_res = msgs}
     -- `findBestRateM` writes the `RateEntry` returned by `findBestRate` to `MonadWriter`
@@ -77,15 +75,14 @@ findBestRate =
     r <- ask
     (src, dest) <- liftEither $ parseExchPair r
     s <- get
-    let (ui@UserInput{..}, matrix, isStateChanged) = syncMatrix s
-    when isStateChanged (put $ InSync ui matrix)
+    let (exRates, matrix, isStateChanged) = syncMatrix s
+    when isStateChanged (put $ InSync exRates matrix)
     liftEither $ optimum src dest matrix 
     where
-      syncMatrix (OutSync ui@UserInput{..}) =
-        let exchRates = M.map fst _exchRateTimes
-            syncdMatrix = floydWarshall exchRates
-        in  (ui, syncdMatrix, True)
-      syncMatrix (InSync ui syncdMatrix) = (ui,syncdMatrix, False)
+      syncMatrix (OutSync exRates) =
+        let syncdMatrix = floydWarshall $ M.map fst exRates
+        in  (exRates, syncdMatrix, True)
+      syncMatrix (InSync exRates syncdMatrix) = (exRates, syncdMatrix, False)
 
 -- | Parse the exchange nodes, the corresponding rates and the timestamp from
 -- the input string and stores the rates to `AppState` if the timestamp is newer.
@@ -96,15 +93,14 @@ updateRates =
   do
     r <- ask
     (time, src, dest, fwdR, bkdR) <- liftEither $ parseRates r
-    ui@UserInput{..} <- get <&> userInputFromState
-    let rateOutdated = M.lookup (src, dest) _exchRateTimes <&> ((< time) . snd)
+    exRates <- get <&> exchRateTimesFromState
+    let rateOutdated = M.lookup (src, dest) exRates <&> ((< time) . snd)
         updateRequired = isNothing rateOutdated || fromJust rateOutdated
-    when updateRequired (put $ newState time src dest fwdR bkdR ui)
+    when updateRequired (put $ newState time src dest fwdR bkdR exRates)
   where
-    newState time src dest fwdR bkdR ui =
-      OutSync $ ui & exchRateTimes %~ updateMap [((dest, src), (bkdR, time)), ((src, dest), (fwdR, time))]
-                   & vertices %~ updateSet [src, dest]
+    newState time src dest fwdR bkdR exRates =
+      OutSync $ updateMap [((dest, src), (bkdR, time)), ((src, dest), (fwdR, time))] exRates
 
-userInputFromState :: AppState -> UserInput
-userInputFromState (InSync ui _) = ui
-userInputFromState (OutSync ui) = ui
+exchRateTimesFromState :: AppState -> ExchRateTimes
+exchRateTimesFromState (InSync exRates _) = exRates
+exchRateTimesFromState (OutSync exRates) = exRates

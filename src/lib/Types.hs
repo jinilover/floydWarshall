@@ -8,7 +8,6 @@ import Data.Time
 
 import qualified Data.Map as M
 import qualified Data.Vector as V
-import qualified Data.Set as S
 
 -- | `Vertex` composes of the exchange and currency
 data Vertex = 
@@ -29,20 +28,12 @@ data RateEntry =
   , _path :: [Vertex]
   } deriving (Show, Eq)
 
--- | Contains the most updated exchange rates between vertices
--- and all vertices involved as provided by user input
-data UserInput = 
-  UserInput {
-    _exchRateTimes :: M.Map (Vertex, Vertex) (Double, UTCTime)
-  , _vertices :: S.Set Vertex
-  } deriving (Show, Eq)
-
-makeLenses ''UserInput
+type ExchRateTimes = M.Map (Vertex, Vertex) (Double, UTCTime)
 
 -- | AppState which represents whether the matrix of the best rates are in-sync
--- with the UserInput.  This applies the idea of FSM.
-data AppState = InSync UserInput (Matrix RateEntry)
-              | OutSync UserInput
+-- with `ExchRateTimes` collected from the user input .  This applies the idea of FSM.
+data AppState = InSync ExchRateTimes (Matrix RateEntry)
+              | OutSync ExchRateTimes
               deriving (Show, Eq)
 
 type Matrix a = V.Vector (V.Vector a)

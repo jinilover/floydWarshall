@@ -2,7 +2,6 @@ module ProcessRequestsTest
   ( test_ProcessRequests )
   where
 
-import Control.Lens
 import Control.Monad.RWS.CPS
 import Data.List (nub)
 
@@ -15,16 +14,14 @@ import Test.Tasty.Hedgehog
 
 import Algorithms (floydWarshall)
 import ProcessRequests (serveReq, findBestRate, updateRates)
-import Types (UserInput(..)
-            , exchRateTimes
-            , vertices
-            , RateEntry(..)
+import Types (RateEntry(..)
             , AppState(..)
             , DisplayMessage(..)
             , AppError(..)
             , ParseError(..)
-            , AlgoError(..))
-import Utils (updateMap, updateSet, blankState)
+            , AlgoError(..)
+            , ExchRateTimes)
+import Utils (updateMap, blankState)
 
 import MockData ( gdax_btc
                 , gdax_usd
@@ -70,7 +67,7 @@ serveReq_bothInvalid =
   let err = [ "Failed reading: parseTimeM: no parse of \"2017-11-0109:42:23+00:00\""
             , "Invalid request to update rates, probably a request for best rate"
             , "letter: Failed reading: satisfy" ]
-      states = [inSyncUi2, outSyncUi2] 
+      states = [inSyncExRates2, outSyncExRates2] 
       expected = Right $ states <&> ((), , mempty {_err = err})
       result = flip traverse states $ 
                 runRWST serveReq' "2017-11-0109:42:23+00:00 KRAKEN BTC USD 1000.0 0.0009"
@@ -80,7 +77,7 @@ serveReq_updateRates :: Property
 serveReq_updateRates = 
   let res = [ "(KRAKEN, BTC) -- 1000.0 2017-11-01 09:42:23 UTC --> (KRAKEN, USD)"
             , "(KRAKEN, USD) -- 9.0e-4 2017-11-01 09:42:23 UTC --> (KRAKEN, BTC)" ]
-      expected = Right ((), outSyncUi1, mempty {_res = res})
+      expected = Right ((), outSyncExRates1, mempty {_res = res})
       result = runRWST serveReq' "2017-11-01T09:42:23+00:00 KRAKEN BTC USD 1000.0 0.0009" blankState
   in  property do result === expected
 
@@ -94,8 +91,8 @@ serveReq_findBestRate =
             , "(GDAX, USD)"
             , "(KRAKEN, USD)"
             , "BEST_RATES_END" ]
-      expected = Right ((), inSyncUi2, mempty {_err = err, _res = res})
-      result = runRWST serveReq' "KRAKEN BTC KRAKEN USD" outSyncUi2
+      expected = Right ((), inSyncExRates2, mempty {_err = err, _res = res})
+      result = runRWST serveReq' "KRAKEN BTC KRAKEN USD" outSyncExRates2
   in  property do result === expected
 
 -- just for info, `updateRates` can be 
@@ -107,15 +104,14 @@ updateRates' = updateRates
 updateRates_addRateToEmptyState :: Property
 updateRates_addRateToEmptyState = property do
   runRWST updateRates' "2017-11-01T09:42:23+00:00 KRAKEN BTC USD 1000.0 0.0009" blankState
-    === Right ((), outSyncUi1, ())
+    === Right ((), outSyncExRates1, ())
 
 updateRates_turnStateOutSync :: Property
 updateRates_turnStateOutSync = 
-  let origStates = [inSyncUi1, outSyncUi1] -- no matter it's originally `InSync` or `OutSync`
+  let origStates = [inSyncExRates1, outSyncExRates1] -- no matter it's originally `InSync` or `OutSync`
       result = flip traverse origStates $ 
                 runRWST updateRates' "2017-11-01T09:43:23+00:00 GDAX BTC USD 1001.0 0.0008"
-      s = OutSync $ ui1 & exchRateTimes %~ updateMap [gdax_btc_usd, gdax_usd_btc]
-                        & vertices %~ updateSet [gdax_btc, gdax_usd]
+      s = OutSync $ updateMap [gdax_btc_usd, gdax_usd_btc] exRates1 
       expected = Right $ replicate 2 ((), s, ())
   in  property do result === expected
 
@@ -125,9 +121,10 @@ updateRates_onlyUpdateByNewerTs =
       -- those of `_exchRates` in the orig state and the update is case insensitive
       inputStrings =  [ "2017-11-01T09:42:24+00:00 KRAKEN USD BTC 0.00089 1001.1"
                       , "2017-11-01T09:42:24+00:00 kraken usd btc 0.00089 1001.1"]
-      result = flip traverse inputStrings \r -> runRWST updateRates' r outSyncUi2
-      s = OutSync $ ui2 & exchRateTimes %~ updateMap [ ((kraken_btc, kraken_usd), (1001.1, d2017_11_01t09_42_24))
-                                                 , ((kraken_usd, kraken_btc), (0.00089, d2017_11_01t09_42_24)) ]
+      result = flip traverse inputStrings \r -> runRWST updateRates' r outSyncExRates2
+      s = OutSync . updateMap [ ((kraken_btc, kraken_usd), (1001.1, d2017_11_01t09_42_24))
+                              , ((kraken_usd, kraken_btc), (0.00089, d2017_11_01t09_42_24)) ]
+                              $ exRates2
       expected = Right $ replicate 2 ((), s, ())
   in  property do result === expected
 
@@ -135,7 +132,7 @@ updateRates_notNewerTs :: Property
 updateRates_notNewerTs = 
   let inputStrings =  [ "2017-11-01T09:42:20+00:00 KRAKEN USD BTC 0.00089 1001.1"
                       , "2017-11-01T09:42:23+00:00 KRAKEN USD BTC 0.00089 1001.1" ] 
-      origStates = [inSyncUi1, outSyncUi1]
+      origStates = [inSyncExRates1, outSyncExRates1]
       result = sequence . nub $ runRWST updateRates' <$> inputStrings <*> origStates
       expected = Right (origStates <&> ((), , ()))
   in  property do result === expected
@@ -145,41 +142,37 @@ findBestRate' = findBestRate
 
 findBestRate_srcNotExists :: Property
 findBestRate_srcNotExists = 
-  let result = runRWST findBestRate' "KRAKEN STC GDAX USD" outSyncUi2
+  let result = runRWST findBestRate' "KRAKEN STC GDAX USD" outSyncExRates2
       expected = Left . AppAlgoError . AlgoOptimumError $ "(KRAKEN, STC) is not entered before"
   in  property do result === expected
 
 findBestRate_destNotExists :: Property
 findBestRate_destNotExists = 
-  let result = runRWST findBestRate' "KRAKEN USD GDAX STC" outSyncUi2
+  let result = runRWST findBestRate' "KRAKEN USD GDAX STC" outSyncExRates2
       expected = Left . AppAlgoError . AlgoOptimumError $ "(GDAX, STC) is not entered before"
   in  property do result === expected
 
 findBestRate_sameUiSameResult :: Property
 findBestRate_sameUiSameResult = 
-  let origStates = [inSyncUi2, outSyncUi2] 
+  let origStates = [inSyncExRates2, outSyncExRates2] 
       result = flip traverse origStates $ runRWST findBestRate' "KRAKEN BTC KRAKEN USD"
       _bestRate = 1001.0
       _start = kraken_btc
       _path = [gdax_btc, gdax_usd, kraken_usd]
-      expected = Right $ replicate 2 (RateEntry{..}, inSyncUi2, ()) 
+      expected = Right $ replicate 2 (RateEntry{..}, inSyncExRates2, ()) 
   in  property do result === expected
 
 -- sample data for convenience 
-ui1 :: UserInput
-ui1 = let _exchRateTimes = M.fromList [kraken_btc_usd, kraken_usd_btc]
-          _vertices = S.fromList [kraken_btc, kraken_usd]
-      in  UserInput{..}
+exRates1 :: ExchRateTimes
+exRates1 = M.fromList [kraken_btc_usd, kraken_usd_btc]
 
-ui2 :: UserInput
-ui2 = ui1 & exchRateTimes %~ updateMap [gdax_btc_usd, gdax_usd_btc]
-          & vertices %~ updateSet [gdax_btc, gdax_usd]
+exRates2 :: ExchRateTimes
+exRates2 = updateMap [gdax_btc_usd, gdax_usd_btc] exRates1
 
-[inSyncUi1, inSyncUi2, outSyncUi1, outSyncUi2] = 
-  [inSync, OutSync] <*> [ui1, ui2]
+[inSyncExRates1, inSyncExRates2, outSyncExRates1, outSyncExRates2] = 
+  [inSync, OutSync] <*> [exRates1, exRates2]
 
-inSync :: UserInput -> AppState
-inSync ui@UserInput{..} = 
-  let exchRates = M.map fst _exchRateTimes
-      matrix = floydWarshall exchRates
-  in  InSync ui matrix
+inSync :: ExchRateTimes -> AppState
+inSync exRates = 
+  let timeRemoved = M.map fst exRates
+  in  InSync exRates $ floydWarshall timeRemoved
