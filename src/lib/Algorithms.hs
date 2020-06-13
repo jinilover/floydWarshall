@@ -5,6 +5,7 @@ module Algorithms
   )
   where
 
+import Data.List (nub)
 import Control.Lens((#))
 import Control.Monad.Except (liftEither)
 import Data.Vector as V hiding ((++), any, null)
@@ -14,13 +15,18 @@ import qualified Data.Map as M
 import Types (RateEntry(..), Matrix, Vertex(..), AsAlgoError(..))
 import Utils (isolatedEntry)
 
+-- | The floydWarshall algorithm
+floydWarshall :: Matrix RateEntry -> Matrix RateEntry
+floydWarshall = runAlgo 0
+
 -- | Build a matrix of n*n size where n is the size of the `Vertex` vector
 -- Each entry is filled with the rate between the Vertex if there is any
 -- available from the given map.  This matrix will be applied the
 -- floydWarshall algorithm
-buildMatrix :: M.Map (Vertex, Vertex) Double -> V.Vector Vertex -> Matrix RateEntry
-buildMatrix exRates vertices = indices <&> buildRow
+buildMatrix :: M.Map (Vertex, Vertex) Double -> Matrix RateEntry
+buildMatrix exRates = indices <&> buildRow
   where
+    vertices = V.fromList . sort . nub $ M.keys exRates >>= \(k1, k2) -> [k1, k2]
     indices = V.fromList [0 .. V.length vertices - 1]
     buildRow i = let entry = isolatedEntry (vertices ! i) in indices <&> buildCol entry
       where
@@ -32,10 +38,6 @@ buildMatrix exRates vertices = indices <&> buildRow
                           _ -> entry
           where
             vtxJ = vertices ! j
-
--- | The floydWarshall algorithm
-floydWarshall :: Matrix RateEntry -> Matrix RateEntry
-floydWarshall = runAlgo 0
 
 runAlgo :: Int -> Matrix RateEntry -> Matrix RateEntry
 runAlgo k matrix -- k is the number of times to run this algo

@@ -11,8 +11,6 @@ import Control.Monad.Except (liftEither)
 import Control.Monad.Writer
 
 import qualified Data.Map as M
-import qualified Data.Set as S
-import qualified Data.Vector as V
 
 import Types (DisplayMessage(..)
             , AppState(..)
@@ -84,9 +82,8 @@ findBestRate =
     liftEither $ optimum src dest matrix 
     where
       syncMatrix (OutSync ui@UserInput{..}) =
-        let vector = V.fromList . S.toList $ _vertices
-            exchRates = M.map fst _exchRateTimes
-            syncdMatrix = floydWarshall $ buildMatrix exchRates vector
+        let exchRates = M.map fst _exchRateTimes
+            syncdMatrix = floydWarshall $ buildMatrix exchRates
         in  (ui, syncdMatrix, True)
       syncMatrix (InSync ui syncdMatrix) = (ui,syncdMatrix, False)
 

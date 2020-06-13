@@ -181,7 +181,6 @@ ui2 = ui1 & exchRateTimes %~ updateMap [gdax_btc_usd, gdax_usd_btc]
 
 inSync :: UserInput -> AppState
 inSync ui@UserInput{..} = 
-  let vector = V.fromList . S.toList $ _vertices
-      exchRates = M.map fst _exchRateTimes
-      matrix = floydWarshall $ buildMatrix exchRates vector
+  let exchRates = M.map fst _exchRateTimes
+      matrix = floydWarshall $ buildMatrix exchRates
   in  InSync ui matrix
