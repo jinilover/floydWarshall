@@ -45,9 +45,8 @@ BEST_RATES_END
 ## Algebraic Data Types
 * `Vertex` represents the exchange and currency.
 * `RateEntry` contains the starting vertex, the list of vertices representing the trades involves from the starting vertex, the best rate between the starting vertex and the last vertex of the list.
-* `UserInput` holds the most updated rates between vertices provided by the user
 * `Matrix` holds `RateEntry`s for the Floyd-Warshall algorithm.
-* `AppState` which is either `InSync` or `OutSync`.  It applies the FSM concept.  `InSync` means the matrix is optimized with the latest `UserInput`.  When the `UserInput` is updated with the price update request, the matrix is no longer valid such that it should update `AppState` as `OutSync`.  In processing the best rate request, it uses the `AppState` to decide whether it should re-run the algorithm to optimize the matrix.  If it is `InSync`, it will not waste the time to re-run the algorithm.  Otherwise, it will re-run the algorithm and update `AppState` as `InSync`.
+* `AppState` which is either `InSync` or `OutSync`.  It applies the FSM concept.  `InSync` means the matrix is optimized with the latest cache `ExchRateTimes` that holds the user input exchange rates.  When the cache is updated with the rate update request, the matrix is no longer valid such that it should update `AppState` as `OutSync`.  In processing the best rate request, it uses the `AppState` to decide whether it should re-run the algorithm to optimize the matrix.  If it is `InSync`, it will not waste the time to re-run the algorithm.  Otherwise, it will re-run the algorithm and update `AppState` as `InSync`.
 
 ## Build application
 * Under `floydWarshall` folder, to enter the nix shell, run `nix-shell`
