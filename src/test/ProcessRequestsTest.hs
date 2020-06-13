@@ -8,13 +8,12 @@ import Data.List (nub)
 
 import qualified Data.Map as M
 import qualified Data.Set as S
-import qualified Data.Vector as V
 
 import Hedgehog
 import Test.Tasty
 import Test.Tasty.Hedgehog
 
-import Algorithms (buildMatrix, floydWarshall)
+import Algorithms (floydWarshall)
 import ProcessRequests (serveReq, findBestRate, updateRates)
 import Types (UserInput(..)
             , exchRateTimes
@@ -182,5 +181,5 @@ ui2 = ui1 & exchRateTimes %~ updateMap [gdax_btc_usd, gdax_usd_btc]
 inSync :: UserInput -> AppState
 inSync ui@UserInput{..} = 
   let exchRates = M.map fst _exchRateTimes
-      matrix = floydWarshall $ buildMatrix exchRates
+      matrix = floydWarshall exchRates
   in  InSync ui matrix

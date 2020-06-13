@@ -16,8 +16,8 @@ import Types (RateEntry(..), Matrix, Vertex(..), AsAlgoError(..))
 import Utils (isolatedEntry)
 
 -- | The floydWarshall algorithm
-floydWarshall :: Matrix RateEntry -> Matrix RateEntry
-floydWarshall = runAlgo 0
+floydWarshall :: M.Map (Vertex, Vertex) Double -> Matrix RateEntry
+floydWarshall = runAlgo 0 . buildMatrix 
 
 -- | Build a matrix of n*n size where n is the size of the `Vertex` vector
 -- Each entry is filled with the rate between the Vertex if there is any

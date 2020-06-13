@@ -21,7 +21,7 @@ import Types (DisplayMessage(..)
             , Vertex(..)
             , AsParseError(..)
             , AsAlgoError(..))
-import Algorithms (floydWarshall, buildMatrix, optimum)
+import Algorithms (floydWarshall, optimum)
 import Parsers (parseRates, parseExchPair)
 import Utils (updateMap, updateSet)
 
@@ -83,7 +83,7 @@ findBestRate =
     where
       syncMatrix (OutSync ui@UserInput{..}) =
         let exchRates = M.map fst _exchRateTimes
-            syncdMatrix = floydWarshall $ buildMatrix exchRates
+            syncdMatrix = floydWarshall exchRates
         in  (ui, syncdMatrix, True)
       syncMatrix (InSync ui syncdMatrix) = (ui,syncdMatrix, False)
 

@@ -61,12 +61,12 @@ buildMatrix_4x4Matrix =
 
 floydWarshall_emptyMatrix :: Property
 floydWarshall_emptyMatrix = property do
-  floydWarshall V.empty === V.empty
+  floydWarshall M.empty === V.empty
 
 floydWarshall_4x4Matrix :: Property
 floydWarshall_4x4Matrix = 
   let rates = fst <$> M.fromList [ gdax_btc_usd, kraken_btc_usd, gdax_usd_btc, kraken_usd_btc]
-      result = floydWarshall $ buildMatrix rates
+      result = floydWarshall rates
       v = V.fromList . sort . nub $ M.keys rates >>= \(k1, k2) -> [k1, k2]
       expected = rateMatrixForTest v
         [ [(0, []),   (1001, [1]), (1, [2]),        (1001, [1,3])]
@@ -83,7 +83,7 @@ optimum_srcOrDestNotExist :: Property
 optimum_srcOrDestNotExist = 
   -- index in matrix first column: kraken_btc = 0, kraken_usd = 1, gdax_usd = 2, gdax_btc = 3
   let exchRates = M.fromList [kraken_btc_usd, kraken_usd_btc, gdax_btc_usd, gdax_usd_btc] <&> fst
-      matrix = floydWarshall $ buildMatrix exchRates
+      matrix = floydWarshall exchRates
       findEntry src dest = optimum' src dest matrix
       expected = Left $ AlgoOptimumError "(KRAKEN, STC) is not entered before"
   in  property do
@@ -95,7 +95,7 @@ optimum_reachability =
   -- index in matrix first column: gdax_btc = 0, gdax_usd = 1, kraken_btc = 2, kraken_usd = 3
   let exchRates = M.fromList [kraken_btc_usd, kraken_usd_btc, gdax_btc_usd, gdax_usd_btc] <&> fst
       -- built the optimised 4*4 matrix
-      matrix = floydWarshall $ buildMatrix exchRates
+      matrix = floydWarshall exchRates
       lastRow = V.last matrix
       lastRow' = V.cons (isolatedEntry kraken_usd) (V.tail lastRow)
       -- by purpose set matrix[3][0] to be isolated to test if `optimum` check the reachability
