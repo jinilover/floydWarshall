@@ -246,8 +246,8 @@ BEST_RATES_BEGIN GDAX USD KRAKEN BTC 9.0e-4
 BEST_RATES_END
 ```
 
-## 
-To load the modules under `test` to ghci, run `cabal repl test:tests`
+## Load the modules under `test`
+Run `cabal repl test:tests`
 
 ## Reference
 
