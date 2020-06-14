@@ -246,6 +246,9 @@ BEST_RATES_BEGIN GDAX USD KRAKEN BTC 9.0e-4
 BEST_RATES_END
 ```
 
+## 
+To load the modules under `test` to ghci, run `cabal repl test:tests`
+
 ## Reference
 
 * https://www.youtube.com/watch?v=oNI0rf2P9gE&t=604s explains Floyd-Warshall algorithm and why it's preferred to Dijkstra's algorithm.
