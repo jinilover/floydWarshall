@@ -6,7 +6,6 @@ import Control.Monad.RWS.CPS
 import Data.List (nub)
 
 import qualified Data.Map as M
-import qualified Data.Set as S
 
 import Hedgehog
 import Test.Tasty
