@@ -12,5 +12,10 @@ let
   f = import ./default.nix;
   hspkgs = pkgs.haskell.packages.${compiler};
   drv = hspkgs.callPackage f {};
+  devTools = with pkgs; [cabal-install];
 in
-  if pkgs.lib.inNixShell then drv.env else drv
+  if pkgs.lib.inNixShell 
+  then drv.env.overrideAttrs (oldEnv: {
+    nativeBuildInputs = oldEnv.nativeBuildInputs ++ devTools;
+  })
+  else drv
